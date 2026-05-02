@@ -108,7 +108,7 @@ export const createFly = (random = Math.random): Fly => {
     id: nextFlyId(),
     x: 12 + Math.round(random() * 76),
     y: 18 + Math.round(random() * 56),
-    size: 34 + Math.round(random() * 18),
+    size: 22 + Math.round(random() * 10),
     rotation: -18 + Math.round(random() * 36),
     hue: 194 + Math.round(random() * 22),
     velocityX: Math.cos(angle) * speed,

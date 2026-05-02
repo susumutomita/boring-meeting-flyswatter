@@ -606,7 +606,8 @@ button {
   height: 106px;
   border-radius: 999px;
   background: linear-gradient(180deg, #3f2416, #a56d3a 48%, #2f190f);
-  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.2), 0 13px 18px rgba(60, 24, 13, 0.2);
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.2), 0 13px 18px
+    rgba(60, 24, 13, 0.2);
   transform: rotate(0deg);
   transform-origin: top center;
 }
@@ -702,8 +703,8 @@ button {
 
 @keyframes swatter-swing {
   0% {
-    transform: translate(-30%, -100%) rotate(calc(var(--swatter-rotate) - 18deg))
-      scale(1.03);
+    transform: translate(-30%, -100%)
+      rotate(calc(var(--swatter-rotate) - 18deg)) scale(1.03);
   }
   40% {
     filter: drop-shadow(0 24px 14px rgba(64, 28, 13, 0.18));
