@@ -55,7 +55,7 @@ type SwatterPose = ArenaPoint & {
 const initialSwatterPose: SwatterPose = {
   x: 52,
   y: 58,
-  rotation: -18,
+  rotation: -8,
   swingKey: 0,
   isTracking: false,
   isSwinging: false,
@@ -269,7 +269,7 @@ const App = () => {
     setSwatter((current) => ({
       ...current,
       ...point,
-      rotation: Math.max(-36, Math.min(20, -18 + horizontalMotion * 1.8)),
+      rotation: Math.max(-14, Math.min(12, -7 + horizontalMotion * 1.15)),
       isTracking: true,
     }));
   };
