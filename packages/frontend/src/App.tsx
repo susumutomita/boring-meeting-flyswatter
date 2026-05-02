@@ -1,4 +1,10 @@
-import { type CSSProperties, useEffect, useState } from 'react';
+import {
+  type CSSProperties,
+  type PointerEvent as ReactPointerEvent,
+  useEffect,
+  useRef,
+  useState,
+} from 'react';
 import {
   advanceMeeting,
   boredomThresholdSeconds,
@@ -11,20 +17,88 @@ import {
   maxPenalties,
   moveFlies,
   registerActivity,
+  selectFlyInSwatReach,
   selectMeetingMetrics,
+  selectSwattingFeedback,
   startMeeting,
   swatFly,
   targetScore,
 } from './lib/meeting';
 
 const activityButtons = ['発言した', 'メモを取った', 'アジェンダを切り替えた'];
+const swatImpactDelayMs = 90;
+const swatRecoverDelayMs = 260;
+const splatLifetimeMs = 680;
+
+type ArenaPoint = {
+  x: number;
+  y: number;
+};
+
+type SwatImpact = ArenaPoint & {
+  id: number;
+};
+
+type FlySplat = SwatImpact & {
+  rotation: number;
+};
+
+type SwatterPose = ArenaPoint & {
+  rotation: number;
+  swingKey: number;
+  isTracking: boolean;
+  isSwinging: boolean;
+  impact: SwatImpact | null;
+  splats: FlySplat[];
+};
+
+const initialSwatterPose: SwatterPose = {
+  x: 52,
+  y: 58,
+  rotation: -18,
+  swingKey: 0,
+  isTracking: false,
+  isSwinging: false,
+  impact: null,
+  splats: [],
+};
+
+const clampPercent = (value: number) => Math.min(100, Math.max(0, value));
+
+const getArenaPoint = (
+  rect: DOMRect,
+  clientX: number,
+  clientY: number
+): ArenaPoint => ({
+  x: clampPercent(((clientX - rect.left) / rect.width) * 100),
+  y: clampPercent(((clientY - rect.top) / rect.height) * 100),
+});
 
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
+  const [swatter, setSwatter] = useState(initialSwatterPose);
+  const flyZoneRef = useRef<HTMLDivElement | null>(null);
+  const lastPointerRef = useRef<ArenaPoint | null>(null);
+  const scheduledTimeoutsRef = useRef<number[]>([]);
+  const nextEffectIdRef = useRef(0);
 
   const metrics = selectMeetingMetrics(state);
   const boredomGauge = getBoredomGauge(state);
   const isRunning = state.phase !== 'idle';
+  const swattingFeedback = state.currentGame
+    ? selectSwattingFeedback(state.currentGame)
+    : null;
+
+  const scheduleSwatterTimeout = (callback: () => void, delay: number) => {
+    const timeoutId = window.setTimeout(() => {
+      callback();
+      scheduledTimeoutsRef.current = scheduledTimeoutsRef.current.filter(
+        (scheduledTimeoutId) => scheduledTimeoutId !== timeoutId
+      );
+    }, delay);
+
+    scheduledTimeoutsRef.current.push(timeoutId);
+  };
 
   useEffect(() => {
     if (!isRunning) {
@@ -102,6 +176,128 @@ const App = () => {
     };
   }, [isRunning]);
 
+  useEffect(
+    () => () => {
+      for (const timeoutId of scheduledTimeoutsRef.current) {
+        window.clearTimeout(timeoutId);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    if (state.phase === 'swatting') {
+      return;
+    }
+
+    lastPointerRef.current = null;
+    setSwatter((current) => ({
+      ...initialSwatterPose,
+      x: current.x,
+      y: current.y,
+    }));
+  }, [state.phase]);
+
+  const triggerSwatAt = (point: ArenaPoint, targetFlyId: number | null) => {
+    nextEffectIdRef.current += 1;
+    const effectId = nextEffectIdRef.current;
+    const splatRotation = -22 + (effectId % 6) * 8;
+
+    setSwatter((current) => ({
+      ...current,
+      ...point,
+      swingKey: effectId,
+      isTracking: true,
+      isSwinging: true,
+      impact: {
+        ...point,
+        id: effectId,
+      },
+    }));
+
+    scheduleSwatterTimeout(() => {
+      if (targetFlyId === null) {
+        return;
+      }
+
+      setState((current) => swatFly(current, targetFlyId));
+      setSwatter((current) => ({
+        ...current,
+        splats: [
+          ...current.splats.slice(-7),
+          {
+            ...point,
+            id: effectId,
+            rotation: splatRotation,
+          },
+        ],
+      }));
+
+      scheduleSwatterTimeout(() => {
+        setSwatter((current) => ({
+          ...current,
+          splats: current.splats.filter((splat) => splat.id !== effectId),
+        }));
+      }, splatLifetimeMs);
+    }, swatImpactDelayMs);
+
+    scheduleSwatterTimeout(() => {
+      setSwatter((current) => ({
+        ...current,
+        isSwinging: false,
+        impact: current.impact?.id === effectId ? null : current.impact,
+      }));
+    }, swatRecoverDelayMs);
+  };
+
+  const handleSwatterPointerMove = (
+    event: ReactPointerEvent<HTMLDivElement>
+  ) => {
+    if (!state.currentGame) {
+      return;
+    }
+
+    const point = getArenaPoint(
+      event.currentTarget.getBoundingClientRect(),
+      event.clientX,
+      event.clientY
+    );
+    const previousPoint = lastPointerRef.current;
+    const horizontalMotion = previousPoint ? point.x - previousPoint.x : 0;
+    lastPointerRef.current = point;
+
+    setSwatter((current) => ({
+      ...current,
+      ...point,
+      rotation: Math.max(-36, Math.min(20, -18 + horizontalMotion * 1.8)),
+      isTracking: true,
+    }));
+  };
+
+  const handleSwatterPointerDown = (
+    event: ReactPointerEvent<HTMLDivElement>
+  ) => {
+    if (!state.currentGame) {
+      return;
+    }
+
+    event.preventDefault();
+    event.currentTarget.setPointerCapture(event.pointerId);
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const point = getArenaPoint(rect, event.clientX, event.clientY);
+    const targetFlyId = selectFlyInSwatReach(state.currentGame.flies, point, {
+      width: rect.width,
+      height: rect.height,
+    });
+
+    triggerSwatAt(point, targetFlyId);
+  };
+
+  const handleKeyboardSwat = (flyId: number, point: ArenaPoint) => {
+    triggerSwatAt(point, flyId);
+  };
+
   return (
     <div className="shell">
       <div className="ambient ambient-left" />
@@ -113,9 +309,9 @@ const App = () => {
           <p className="hero-kicker">会議の退屈さを、行動に変える。</p>
           <h1>ハエが出る会議は、何かが足りないです。</h1>
           <p className="hero-copy">
-            無操作と無発話の空白を退屈度として検知し、しきい値に達した瞬間だけ
-            ハエ叩きが起動します。笑えるのに、会議改善の指標として読める。
-            そのギリギリを狙った、会議 UX の実験機です。
+            会議の空白時間を退屈の兆候として捉え、しきい値に達した瞬間だけ
+            ミニゲームが立ち上がります。ふざけて見えるのに、会議のテンポや密度を
+            見直すきっかけになる。その境界を狙った、会議 UX の実験機です。
           </p>
 
           <div className="hero-actions" data-no-activity-capture="true">
@@ -209,50 +405,93 @@ const App = () => {
 
           <article className="panel arena-panel">
             <div className="panel-header">
-              <span>Bubble Pop Intervention</span>
+              <span>Flyswatter Intervention</span>
               <span>
                 {state.currentGame
-                  ? `目標 ${targetScore} / 残機 ${
+                  ? `残り ${formatClock(state.currentGame.remainingSeconds)} / 目標 ${targetScore} / 残機 ${
                       maxPenalties - state.currentGame.penalties
                     }`
                   : '待機'}
               </span>
             </div>
 
-            <div className="arena">
+            <div
+              className={`arena ${state.currentGame ? 'arena-active' : ''} ${
+                swattingFeedback?.isBriefing ? 'is-briefing' : ''
+              }`}
+              style={
+                {
+                  '--arena-pressure': `${
+                    swattingFeedback ? swattingFeedback.pressurePercent : 0
+                  }%`,
+                } as CSSProperties
+              }
+            >
               {state.currentGame ? (
                 <>
                   <div className="arena-copy">
-                    <p>
-                      退屈を検知。高速で浮くシャボン玉を割って、会議の空気を起こしてください。
-                    </p>
+                    <p>{swattingFeedback?.detail}</p>
                     <strong>{state.currentGame.score} pts</strong>
-                    <span className="arena-subscore">
-                      score {state.currentGame.score} / damage{' '}
-                      {state.currentGame.penalties}
-                      {' / '}charge{' '}
-                      {Math.round(
-                        (state.currentGame.flies.reduce(
-                          (sum, fly) => sum + fly.charge,
-                          0
-                        ) /
-                          (state.currentGame.flies.length *
-                            counterThresholdTicks)) *
-                          100
-                      )}
-                      %
-                    </span>
+                    <div className="arena-feedback">
+                      <span className="feedback-headline">
+                        {swattingFeedback?.headline}
+                      </span>
+                      <span>
+                        残り {formatClock(state.currentGame.remainingSeconds)}
+                      </span>
+                      <span>圧 {swattingFeedback?.pressurePercent ?? 0}%</span>
+                      <span>危険 {swattingFeedback?.dangerCount ?? 0}</span>
+                    </div>
+                    <div
+                      aria-label="反撃圧"
+                      aria-valuemax={100}
+                      aria-valuemin={0}
+                      aria-valuenow={swattingFeedback?.pressurePercent ?? 0}
+                      className="pressure-meter"
+                      role="progressbar"
+                      tabIndex={0}
+                    >
+                      <span />
+                    </div>
                   </div>
 
-                  <div className="bubble-zone" data-no-activity-capture="true">
+                  <div
+                    className="fly-zone"
+                    data-no-activity-capture="true"
+                    onPointerDown={handleSwatterPointerDown}
+                    onPointerEnter={() =>
+                      setSwatter((current) => ({
+                        ...current,
+                        isTracking: true,
+                      }))
+                    }
+                    onPointerLeave={() => {
+                      lastPointerRef.current = null;
+                      setSwatter((current) => ({
+                        ...current,
+                        isTracking: current.isSwinging,
+                      }));
+                    }}
+                    onPointerMove={handleSwatterPointerMove}
+                    ref={flyZoneRef}
+                  >
                     {state.currentGame.flies.map((fly) => (
                       <button
-                        aria-label="シャボン玉を割る"
-                        className="bubble"
+                        aria-label="ハエを叩く"
+                        className={`fly-target ${
+                          fly.charge / counterThresholdTicks >= 0.72
+                            ? 'is-danger'
+                            : ''
+                        }`}
                         key={fly.id}
-                        onClick={() =>
-                          setState((current) => swatFly(current, fly.id))
-                        }
+                        onClick={(event) => {
+                          if (event.detail === 0) {
+                            handleKeyboardSwat(fly.id, {
+                              x: fly.x,
+                              y: fly.y,
+                            });
+                          }
+                        }}
                         style={
                           {
                             '--fly-x': `${fly.x}%`,
@@ -260,14 +499,66 @@ const App = () => {
                             '--fly-size': `${fly.size}px`,
                             '--fly-rotate': `${fly.rotation}deg`,
                             '--fly-hue': `${fly.hue}deg`,
-                            '--bubble-threat': `${
+                            '--fly-threat': `${
                               fly.charge / counterThresholdTicks
+                            }`,
+                            '--fly-scale': `${
+                              1 + (fly.charge / counterThresholdTicks) * 0.18
                             }`,
                           } as CSSProperties
                         }
                         type="button"
+                      >
+                        <span className="fly-wing fly-wing-left" />
+                        <span className="fly-wing fly-wing-right" />
+                        <span className="fly-body" />
+                        <span className="fly-head" />
+                      </button>
+                    ))}
+                    {swatter.splats.map((splat) => (
+                      <span
+                        aria-hidden="true"
+                        className="fly-splat"
+                        key={splat.id}
+                        style={
+                          {
+                            '--splat-x': `${splat.x}%`,
+                            '--splat-y': `${splat.y}%`,
+                            '--splat-rotate': `${splat.rotation}deg`,
+                          } as CSSProperties
+                        }
                       />
                     ))}
+                    {swatter.impact ? (
+                      <span
+                        aria-hidden="true"
+                        className="swat-impact"
+                        key={swatter.impact.id}
+                        style={
+                          {
+                            '--impact-x': `${swatter.impact.x}%`,
+                            '--impact-y': `${swatter.impact.y}%`,
+                          } as CSSProperties
+                        }
+                      />
+                    ) : null}
+                    <span
+                      aria-hidden="true"
+                      className={`fly-swatter ${
+                        swatter.isTracking ? 'is-tracking' : ''
+                      } ${swatter.isSwinging ? 'is-swinging' : ''}`}
+                      key={swatter.swingKey}
+                      style={
+                        {
+                          '--swatter-x': `${swatter.x}%`,
+                          '--swatter-y': `${swatter.y}%`,
+                          '--swatter-rotate': `${swatter.rotation}deg`,
+                        } as CSSProperties
+                      }
+                    >
+                      <span className="swatter-head" />
+                      <span className="swatter-handle" />
+                    </span>
                   </div>
                 </>
               ) : (
@@ -275,7 +566,7 @@ const App = () => {
                   <p>今は会議に空白がありません。</p>
                   <strong>
                     無操作が {boredomThresholdSeconds}{' '}
-                    秒続くと、シャボン玉が現れます。
+                    秒続くと、ハエが現れます。
                   </strong>
                 </div>
               )}

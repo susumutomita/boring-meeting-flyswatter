@@ -1,9 +1,10 @@
 export const boredomThresholdSeconds = 8;
-export const gameDurationSeconds = 10;
-export const flyCount = 5;
-export const counterThresholdTicks = 22;
+export const gameDurationSeconds = 20;
+export const flyCount = 6;
+export const counterThresholdTicks = 36;
 export const targetScore = 10;
-export const maxPenalties = 3;
+export const maxPenalties = 5;
+export const openingGraceTicks = 28;
 
 export type MeetingPhase = 'idle' | 'monitoring' | 'swatting';
 
@@ -33,6 +34,7 @@ export type ActiveGameSeed = {
   remainingSeconds: number;
   score: number;
   penalties: number;
+  graceTicks: number;
   flies: Fly[];
 };
 
@@ -59,8 +61,28 @@ export type MeetingMetrics = {
   totalSwats: number;
 };
 
+export type SwattingFeedback = {
+  headline: string;
+  detail: string;
+  pressurePercent: number;
+  dangerCount: number;
+  isBriefing: boolean;
+};
+
+export type SwatPoint = {
+  x: number;
+  y: number;
+};
+
+export type SwatFieldSize = {
+  width: number;
+  height: number;
+};
+
 let flyId = 0;
 let eventId = 0;
+const defaultSwatReachPixels = 42;
+const dangerChargeRatio = 0.72;
 const flyBounds = {
   minX: 8,
   maxX: 92,
@@ -104,6 +126,7 @@ export const createGameSeed = (): ActiveGameSeed => ({
   remainingSeconds: gameDurationSeconds,
   score: 0,
   penalties: 0,
+  graceTicks: openingGraceTicks,
   flies: createFlyField(),
 });
 
@@ -172,12 +195,32 @@ export const advanceMeeting = (
   const nextMeetingSeconds = state.meetingSeconds + 1;
 
   if (state.currentGame) {
+    const nextRemainingSeconds = state.currentGame.remainingSeconds - 1;
     const totalInactiveSeconds = state.totalInactiveSeconds + 1;
+
+    if (nextRemainingSeconds <= 0) {
+      return settleCurrentGame(
+        {
+          ...state,
+          meetingSeconds: nextMeetingSeconds,
+          totalInactiveSeconds,
+        },
+        {
+          ...state.currentGame,
+          remainingSeconds: 0,
+        },
+        '時間切れで会議に復帰'
+      );
+    }
 
     return {
       ...state,
       meetingSeconds: nextMeetingSeconds,
       totalInactiveSeconds,
+      currentGame: {
+        ...state.currentGame,
+        remainingSeconds: nextRemainingSeconds,
+      },
     };
   }
 
@@ -243,8 +286,41 @@ export const swatFly = (
   return {
     ...state,
     currentGame,
-    lastActivityLabel: 'シャボン玉を割った',
+    lastActivityLabel: 'ハエを叩いた',
   };
+};
+
+export const selectFlyInSwatReach = (
+  flies: Fly[],
+  point: SwatPoint,
+  fieldSize: SwatFieldSize,
+  swatReachPixels = defaultSwatReachPixels
+): number | null => {
+  if (fieldSize.width <= 0 || fieldSize.height <= 0) {
+    return null;
+  }
+
+  const selected = flies.reduce<{ id: number | null; distance: number }>(
+    (current, fly) => {
+      const distance = Math.hypot(
+        ((fly.x - point.x) / 100) * fieldSize.width,
+        ((fly.y - point.y) / 100) * fieldSize.height
+      );
+      const reachableDistance = fly.size / 2 + swatReachPixels;
+
+      if (distance > reachableDistance || distance >= current.distance) {
+        return current;
+      }
+
+      return {
+        id: fly.id,
+        distance,
+      };
+    },
+    { id: null, distance: Number.POSITIVE_INFINITY }
+  );
+
+  return selected.id;
 };
 
 export const moveFlies = (state: MeetingState): MeetingState => {
@@ -252,12 +328,14 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     return state;
   }
 
+  const isBriefing = state.currentGame.graceTicks > 0;
+  const graceTicks = Math.max(0, state.currentGame.graceTicks - 1);
   const flies = state.currentGame.flies.map((fly) => {
     let nextX = fly.x + fly.velocityX;
     let nextY = fly.y + fly.velocityY;
     let nextVelocityX = fly.velocityX;
     let nextVelocityY = fly.velocityY;
-    const nextCharge = fly.charge + 1;
+    const nextCharge = isBriefing ? fly.charge : fly.charge + 1;
 
     if (nextX <= flyBounds.minX || nextX >= flyBounds.maxX) {
       nextVelocityX *= -1;
@@ -280,40 +358,47 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     };
   });
 
-  const counterIndex = flies.reduce<number>((selectedIndex, fly, index) => {
-    if (fly.charge < counterThresholdTicks) {
-      return selectedIndex;
-    }
+  const counterIndex = isBriefing
+    ? -1
+    : flies.reduce<number>((selectedIndex, fly, index) => {
+        if (fly.charge < counterThresholdTicks) {
+          return selectedIndex;
+        }
 
-    if (selectedIndex === -1 || fly.charge > flies[selectedIndex]?.charge) {
-      return index;
-    }
+        if (selectedIndex === -1 || fly.charge > flies[selectedIndex]?.charge) {
+          return index;
+        }
 
-    return selectedIndex;
-  }, -1);
+        return selectedIndex;
+      }, -1);
 
   let penalties = state.currentGame.penalties;
   let triggeredCounter = false;
+  let activeFlies = flies;
 
   if (counterIndex >= 0) {
     penalties += 1;
     triggeredCounter = true;
-    const fly = flies[counterIndex];
-
-    if (fly) {
-      flies[counterIndex] = {
-        ...fly,
-        charge: 0,
-        velocityX: fly.velocityX * -1,
-        velocityY: fly.velocityY * -1,
-      };
-    }
+    activeFlies = flies.map((fly, index) =>
+      index === counterIndex
+        ? {
+            ...fly,
+            charge: 0,
+            velocityX: fly.velocityX * -1,
+            velocityY: fly.velocityY * -1,
+          }
+        : {
+            ...fly,
+            charge: 0,
+          }
+    );
   }
 
   const currentGame = {
     ...state.currentGame,
-    flies,
+    flies: activeFlies,
     penalties,
+    graceTicks,
   };
 
   if (currentGame.penalties >= maxPenalties) {
@@ -323,9 +408,67 @@ export const moveFlies = (state: MeetingState): MeetingState => {
   return {
     ...state,
     currentGame,
-    lastActivityLabel: triggeredCounter
-      ? 'シャボン玉が反撃した'
-      : state.lastActivityLabel,
+    lastActivityLabel: isBriefing
+      ? 'ハエ叩きの説明中'
+      : triggeredCounter
+        ? 'ハエが反撃した'
+        : state.lastActivityLabel,
+  };
+};
+
+export const selectSwattingFeedback = (
+  game: ActiveGameSeed
+): SwattingFeedback => {
+  const isBriefing = game.graceTicks > 0;
+  const maxCharge = game.flies.reduce(
+    (currentMax, fly) => Math.max(currentMax, fly.charge),
+    0
+  );
+  const pressurePercent = isBriefing
+    ? 0
+    : Math.min(100, Math.round((maxCharge / counterThresholdTicks) * 100));
+  const dangerCount = isBriefing
+    ? 0
+    : game.flies.filter(
+        (fly) => fly.charge >= counterThresholdTicks * dangerChargeRatio
+      ).length;
+
+  if (isBriefing) {
+    return {
+      headline: '説明中',
+      detail: 'まずはハエの動きを確認。ポインターを動かして狙いを合わせる。',
+      pressurePercent,
+      dangerCount,
+      isBriefing,
+    };
+  }
+
+  if (dangerCount > 0) {
+    return {
+      headline: '反撃寸前',
+      detail: '赤く強く光るハエから先に叩いて、会議の空気を守る。',
+      pressurePercent,
+      dangerCount,
+      isBriefing,
+    };
+  }
+
+  if (game.remainingSeconds <= 5) {
+    return {
+      headline: '締めの一振り',
+      detail: '残り時間わずか。拾えるハエを叩いてテンポを戻す。',
+      pressurePercent,
+      dangerCount,
+      isBriefing,
+    };
+  }
+
+  return {
+    headline: '空気を起こす',
+    detail: '逃げ回るハエを叩いて、停滞した会議のテンポを戻す。',
+    pressurePercent,
+    dangerCount,
+    isBriefing,
   };
 };
 

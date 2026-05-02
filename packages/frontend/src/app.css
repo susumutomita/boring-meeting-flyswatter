@@ -328,6 +328,8 @@ button {
 
 .arena-subscore {
   display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
   margin-top: 10px;
   padding: 6px 10px;
   border-radius: 999px;
@@ -338,69 +340,286 @@ button {
   letter-spacing: 0.08em;
 }
 
-.bubble-zone {
+.fly-zone {
   position: absolute;
   inset: 0;
   overflow: hidden;
+  cursor: none;
+  isolation: isolate;
+  touch-action: none;
 }
 
-.bubble {
+.fly-target {
   position: absolute;
   top: var(--fly-y);
   left: var(--fly-x);
   width: var(--fly-size);
   height: var(--fly-size);
   border: 0;
-  border-radius: 50%;
-  background: radial-gradient(
-      circle at 34% 28%,
-      rgba(255, 255, 255, 0.98) 0 10%,
-      rgba(255, 255, 255, 0.45) 11% 18%,
-      transparent 19%
-    ),
-    radial-gradient(
-      circle at 64% 68%,
-      rgba(255, 255, 255, 0.25) 0 18%,
-      transparent 19%
-    ),
-    linear-gradient(
-      180deg,
-      rgba(198, 243, 255, 0.68) 0%,
-      rgba(255, 255, 255, 0.26) 100%
-    );
-  cursor: crosshair;
-  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.58), inset 0 -10px 18px
-    rgba(111, 180, 214, 0.24), 0 10px 22px rgba(87, 149, 189, 0.18), 0 0
-    calc(18px * var(--bubble-threat)) rgba(255, 103, 88, 0.45);
-  transform: translate(-50%, -50%) rotate(var(--fly-rotate));
+  padding: 0;
+  background: transparent;
+  cursor: none;
+  filter: hue-rotate(var(--fly-hue)) drop-shadow(0 10px 10px rgba(0, 0, 0, 0.2))
+    drop-shadow(0 0 calc(16px * var(--fly-threat)) rgba(169, 28, 20, 0.55));
+  transform: translate(-50%, -50%) rotate(var(--fly-rotate))
+    scale(var(--fly-scale, 1));
   transition: top 90ms linear, left 90ms linear, transform 90ms linear;
+  z-index: 4;
+  animation: fly-buzz 150ms steps(2, end) infinite alternate;
 }
 
-.bubble::before,
-.bubble::after {
+.fly-target:focus-visible {
+  outline: 3px solid rgba(159, 26, 22, 0.65);
+  outline-offset: 6px;
+}
+
+.fly-wing,
+.fly-body,
+.fly-head {
   position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.fly-wing {
+  top: 14%;
+  width: 42%;
+  height: 48%;
+  border: 1px solid rgba(31, 22, 15, 0.24);
+  border-radius: 50%;
+  background: radial-gradient(
+    circle at 40% 34%,
+    rgba(255, 255, 255, 0.82),
+    rgba(174, 221, 234, 0.34) 62%,
+    rgba(174, 221, 234, 0.12)
+  );
+  transform-origin: bottom center;
+  animation: wing-flap 70ms linear infinite alternate;
+}
+
+.fly-wing-left {
+  left: 2%;
+  transform: rotate(-28deg);
+}
+
+.fly-wing-right {
+  right: 2%;
+  transform: rotate(28deg);
+}
+
+.fly-body {
+  top: 28%;
+  left: 32%;
+  width: 36%;
+  height: 52%;
+  border-radius: 50%;
+  background: linear-gradient(90deg, #090706, #352922 48%, #0f0b08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08), 0 0
+    calc(10px * var(--fly-threat)) rgba(159, 26, 22, 0.55);
+}
+
+.fly-body::before,
+.fly-body::after {
+  position: absolute;
+  top: 12%;
+  width: 40%;
+  height: 82%;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.25);
   content: "";
 }
 
-.bubble::before {
-  inset: 6%;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.45);
+.fly-body::before {
+  left: -38%;
+  transform: rotate(-24deg);
 }
 
-.bubble::after {
-  inset: -14%;
+.fly-body::after {
+  right: -38%;
+  transform: rotate(24deg);
+}
+
+.fly-head {
+  top: 16%;
+  left: 35%;
+  width: 30%;
+  height: 28%;
+  border-radius: 48% 48% 42% 42%;
+  background: #14100d;
+}
+
+.fly-head::before,
+.fly-head::after {
+  position: absolute;
+  top: 18%;
+  width: 38%;
+  height: 44%;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #fff6e0, #b31d18 42%, #3a0504);
+  content: "";
+}
+
+.fly-head::before {
+  left: -14%;
+}
+
+.fly-head::after {
+  right: -14%;
+}
+
+.fly-target:hover {
+  transform: translate(-50%, -50%) rotate(var(--fly-rotate))
+    scale(calc(var(--fly-scale, 1) * 1.1));
+}
+
+.fly-splat,
+.swat-impact,
+.fly-swatter {
+  position: absolute;
+  pointer-events: none;
+}
+
+.fly-splat {
+  top: var(--splat-y);
+  left: var(--splat-x);
+  width: 58px;
+  height: 34px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 40% 45%, #251712 0 28%, transparent 29%),
+    radial-gradient(circle at 63% 34%, #160d0a 0 20%, transparent 21%),
+    radial-gradient(
+      circle at 55% 62%,
+      rgba(82, 20, 16, 0.8) 0 22%,
+      transparent 23%
+    );
+  opacity: 0.72;
+  transform: translate(-50%, -50%) rotate(var(--splat-rotate)) scale(1);
+  animation: splat-fade 680ms ease-out both;
+  z-index: 5;
+}
+
+.fly-splat::before,
+.fly-splat::after {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(28, 18, 13, 0.74);
+  content: "";
+}
+
+.fly-splat::before {
+  top: -5px;
+  left: 11px;
+  width: 14px;
+  height: 9px;
+}
+
+.fly-splat::after {
+  right: 4px;
+  bottom: 0;
+  width: 12px;
+  height: 7px;
+}
+
+.swat-impact {
+  top: var(--impact-y);
+  left: var(--impact-x);
+  width: 120px;
+  height: 120px;
   border-radius: 50%;
   background: radial-gradient(
-    circle,
-    rgba(255, 120, 102, calc(0.1 + var(--bubble-threat) * 0.3)) 0,
-    rgba(112, 190, 225, 0) 70%
-  );
-  filter: hue-rotate(var(--fly-hue));
+      circle,
+      rgba(255, 246, 194, 0.72) 0 10%,
+      transparent 12%
+    ),
+    repeating-conic-gradient(
+      from 0deg,
+      rgba(255, 182, 72, 0.75) 0deg 7deg,
+      transparent 8deg 16deg
+    );
+  mix-blend-mode: multiply;
+  transform: translate(-50%, -50%) scale(0.32);
+  animation: impact-pop 260ms ease-out both;
+  z-index: 6;
 }
 
-.bubble:hover {
-  transform: translate(-50%, -50%) rotate(var(--fly-rotate)) scale(1.12);
+.fly-swatter {
+  top: var(--swatter-y);
+  left: var(--swatter-x);
+  width: 150px;
+  height: 188px;
+  opacity: 0;
+  transform: translate(-26%, -84%) rotate(var(--swatter-rotate));
+  transform-origin: 50% 100%;
+  transition: top 50ms linear, left 50ms linear, opacity 120ms ease, transform
+    90ms ease-out;
+  z-index: 8;
+}
+
+.fly-swatter.is-tracking {
+  opacity: 1;
+}
+
+.fly-swatter.is-swinging {
+  animation: swatter-swing 260ms cubic-bezier(0.15, 0.92, 0.22, 1.18) both;
+}
+
+.swatter-head,
+.swatter-handle {
+  position: absolute;
+  display: block;
+}
+
+.swatter-head {
+  top: 0;
+  left: 38px;
+  width: 78px;
+  height: 94px;
+  border: 5px solid #931916;
+  border-radius: 11px;
+  background: repeating-linear-gradient(
+      0deg,
+      rgba(147, 25, 22, 0.42) 0 3px,
+      transparent 3px 12px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(147, 25, 22, 0.34) 0 3px,
+      transparent 3px 12px
+    ), rgba(255, 248, 235, 0.62);
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.48), 0 10px 18px
+    rgba(60, 24, 13, 0.2);
+}
+
+.swatter-head::before {
+  position: absolute;
+  inset: 12px;
+  border: 2px solid rgba(147, 25, 22, 0.42);
+  border-radius: 6px;
+  content: "";
+}
+
+.swatter-handle {
+  top: 83px;
+  left: 72px;
+  width: 17px;
+  height: 110px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #4a2414, #a05f34 46%, #3a1d11);
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.22), 0 13px 18px
+    rgba(60, 24, 13, 0.2);
+  transform: rotate(-8deg);
+  transform-origin: top center;
+}
+
+.swatter-handle::after {
+  position: absolute;
+  right: -3px;
+  bottom: -4px;
+  left: -3px;
+  height: 20px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #2e160d, #7d4324 48%, #2d150c);
+  content: "";
 }
 
 .metrics-grid {
@@ -461,21 +680,68 @@ button {
   }
 }
 
-@keyframes buzz {
+@keyframes fly-buzz {
   from {
-    margin-top: -4px;
+    margin-top: -3px;
+    margin-left: -2px;
   }
   to {
-    margin-top: 4px;
+    margin-top: 3px;
+    margin-left: 2px;
   }
 }
 
-@keyframes dart {
+@keyframes wing-flap {
+  from {
+    scale: 1 0.72;
+  }
+  to {
+    scale: 1 1.08;
+  }
+}
+
+@keyframes swatter-swing {
   0% {
-    margin-left: -4px;
+    transform: translate(-38%, -96%) rotate(calc(var(--swatter-rotate) - 34deg))
+      scale(1.04);
+  }
+  42% {
+    filter: drop-shadow(0 24px 14px rgba(64, 28, 13, 0.18));
+    transform: translate(-12%, -58%) rotate(calc(var(--swatter-rotate) + 28deg))
+      scale(0.95);
+  }
+  62% {
+    transform: translate(-11%, -56%) rotate(calc(var(--swatter-rotate) + 18deg))
+      scale(0.9);
   }
   100% {
-    margin-left: 4px;
+    transform: translate(-26%, -84%) rotate(var(--swatter-rotate)) scale(1);
+  }
+}
+
+@keyframes impact-pop {
+  0% {
+    opacity: 0.95;
+    transform: translate(-50%, -50%) scale(0.24) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.2) rotate(18deg);
+  }
+}
+
+@keyframes splat-fade {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--splat-rotate)) scale(0.55);
+  }
+  24% {
+    opacity: 0.8;
+    transform: translate(-50%, -50%) rotate(var(--splat-rotate)) scale(1.08);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(var(--splat-rotate)) scale(0.92);
   }
 }
 
@@ -492,6 +758,23 @@ button {
 
   .arena {
     min-height: 360px;
+  }
+
+  .fly-swatter {
+    width: 126px;
+    height: 158px;
+  }
+
+  .swatter-head {
+    left: 32px;
+    width: 66px;
+    height: 80px;
+  }
+
+  .swatter-handle {
+    top: 72px;
+    left: 62px;
+    height: 92px;
   }
 }
 
