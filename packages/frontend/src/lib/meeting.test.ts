@@ -21,7 +21,6 @@ import {
   swatTreat,
   toggleBoredomReason,
   treatBoostMultiplier,
-  treatBoostTicks,
 } from './meeting';
 
 const createFlyFixture = (id: number): Fly => ({
@@ -46,7 +45,7 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
   flies: [createFlyFixture(101), createFlyFixture(202)],
   treat: null,
   treatSpawnTicksRemaining: 0,
-  multiplierTicksRemaining: 0,
+  treatConsumed: false,
 });
 
 describe('会議退屈度ロジック', () => {
@@ -347,20 +346,20 @@ describe('会議退屈度ロジック', () => {
 
     expect(nextState.currentGame?.treat).not.toBeNull();
     expect(nextState.currentGame?.treatSpawnTicksRemaining).toBe(0);
-    expect(nextState.lastActivityLabel).toBe('フラペチーノが現れた');
+    expect(nextState.lastActivityLabel).toBe('ボーナスが現れた');
   });
 
-  it('フラペチーノを叩くと倍率ブーストが入りハエ叩きが 2 ポイントになるべき', () => {
-    const baseFly = { ...createFlyFixture(303) };
+  it('ボーナスを叩いた瞬間に現在スコアが 2 倍になりアイテムは消えるべき', () => {
     const state = {
       ...startMeeting(),
       phase: 'swatting' as const,
       currentGame: {
         ...createGameFixture(),
         atSecond: boredomThresholdSeconds,
-        flies: [baseFly],
+        score: 3,
         treat: {
           id: 99,
+          itemId: 'frappuccino',
           x: 50,
           y: 50,
           velocityX: 0.3,
@@ -372,39 +371,49 @@ describe('会議退屈度ロジック', () => {
     };
 
     const afterTreat = swatTreat(state);
-    expect(afterTreat.currentGame?.treat).toBeNull();
-    expect(afterTreat.currentGame?.multiplierTicksRemaining).toBe(
-      treatBoostTicks
-    );
 
-    const afterFly = swatFly(afterTreat, baseFly.id, () =>
-      createFlyFixture(404)
-    );
-    expect(afterFly.currentGame?.score).toBe(treatBoostMultiplier);
-    expect(afterFly.lastActivityLabel).toBe(
-      `ハエを叩いた x${treatBoostMultiplier}`
+    expect(afterTreat.currentGame?.treat).toBeNull();
+    expect(afterTreat.currentGame?.treatConsumed).toBe(true);
+    expect(afterTreat.currentGame?.score).toBe(3 * treatBoostMultiplier);
+    expect(afterTreat.lastActivityLabel).toBe(
+      `ボーナスで現スコアが ×${treatBoostMultiplier}`
     );
   });
 
-  it('倍率ブーストは moveFlies の毎ティックで減っていきゼロでフラペチーノ効果が切れるべき', () => {
-    const state = {
+  it('ボーナスは 1 ゲームに 1 度だけクリックでき、消費後は再出現しないべき', () => {
+    const initialState = {
       ...startMeeting(),
       phase: 'swatting' as const,
       currentGame: {
         ...createGameFixture(),
         atSecond: boredomThresholdSeconds,
-        multiplierTicksRemaining: 2,
+        score: 1,
+        treat: {
+          id: 99,
+          itemId: 'frappuccino',
+          x: 50,
+          y: 50,
+          velocityX: 0.3,
+          velocityY: 0.2,
+          bobSeed: 0,
+          age: 4,
+        },
+        treatSpawnTicksRemaining: 0,
       },
     };
 
-    const after1 = moveFlies(state);
-    expect(after1.currentGame?.multiplierTicksRemaining).toBe(1);
+    const afterFirst = swatTreat(initialState);
+    expect(afterFirst.currentGame?.treat).toBeNull();
+    expect(afterFirst.currentGame?.treatConsumed).toBe(true);
 
-    const after2 = moveFlies(after1);
-    expect(after2.currentGame?.multiplierTicksRemaining).toBe(0);
+    const afterSecondClick = swatTreat(afterFirst);
+    expect(afterSecondClick.currentGame?.score).toBe(
+      afterFirst.currentGame?.score
+    );
 
-    const after3 = moveFlies(after2);
-    expect(after3.currentGame?.multiplierTicksRemaining).toBe(0);
+    const afterTick = moveFlies(afterFirst);
+    expect(afterTick.currentGame?.treat).toBeNull();
+    expect(afterTick.currentGame?.treatConsumed).toBe(true);
   });
 
   it('ミーティング終了で完了フェーズに移り終了時刻を記録するべき', () => {

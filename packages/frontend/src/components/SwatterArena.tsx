@@ -8,6 +8,7 @@ import {
   maxPenalties,
   targetScore,
 } from '../lib/meeting';
+import { findSponsoredItem } from '../lib/sponsoredItems';
 
 type SwatterArenaProps = {
   game: ActiveGame | null;
@@ -44,7 +45,7 @@ export const SwatterArena = ({
   const remainingSeconds = game?.remainingSeconds ?? 0;
   const lives = game ? maxPenalties - game.penalties : maxPenalties;
   const treat = game?.treat ?? null;
-  const isBoosted = (game?.multiplierTicksRemaining ?? 0) > 0;
+  const sponsoredItem = treat ? findSponsoredItem(treat.itemId) : null;
 
   return (
     <article className="panel arena-panel game-panel">
@@ -82,11 +83,6 @@ export const SwatterArena = ({
             <div className="arena-score" aria-hidden="true">
               {game.score}
             </div>
-            {isBoosted ? (
-              <div className="arena-boost-badge" aria-live="polite">
-                ×2 BOOST
-              </div>
-            ) : null}
             <div
               aria-label="ハエの反撃ゲージ"
               aria-valuemax={100}
@@ -183,10 +179,10 @@ export const SwatterArena = ({
                   }
                 />
               ))}
-              {treat ? (
+              {treat && sponsoredItem ? (
                 <button
-                  aria-label="フラペチーノを叩いて 2 倍ブースト"
-                  className="treat-target"
+                  aria-label={`${sponsoredItem.label} を叩いて現スコアを 2 倍にする`}
+                  className={`treat-target treat-target-${sponsoredItem.spriteKind}`}
                   key={treat.id}
                   onClick={(event) => {
                     event.stopPropagation();
@@ -200,6 +196,7 @@ export const SwatterArena = ({
                       '--treat-bob': treat.bobSeed.toFixed(3),
                     } as CSSProperties
                   }
+                  title={sponsoredItem.description}
                   type="button"
                 >
                   <span className="treat-cream" />
@@ -208,6 +205,7 @@ export const SwatterArena = ({
                   <span className="treat-face" aria-hidden="true">
                     ◕‿◕
                   </span>
+                  <span className="treat-caption">{sponsoredItem.label}</span>
                 </button>
               ) : null}
               {treatBoostPopup ? (
@@ -223,7 +221,7 @@ export const SwatterArena = ({
                   }
                 >
                   <span className="treat-boost-popup-headline">×2!</span>
-                  <span className="treat-boost-popup-sub">BOOST 発動</span>
+                  <span className="treat-boost-popup-sub">現スコアが 2 倍</span>
                   <span className="treat-boost-popup-sparkle treat-boost-popup-sparkle-a">
                     ✦
                   </span>
