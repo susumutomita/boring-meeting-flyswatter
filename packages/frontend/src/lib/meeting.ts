@@ -1,3 +1,5 @@
+import { pickSponsoredItem } from './sponsoredItems';
+
 export const boredomThresholdSeconds = 60;
 export const gameDurationSeconds = 20;
 export const flyCount = 6;
@@ -6,7 +8,6 @@ export const targetScore = 10;
 export const maxPenalties = 5;
 export const openingGraceTicks = 28;
 export const treatSpawnTicks = 33;
-export const treatBoostTicks = 55;
 export const treatBoostMultiplier = 2;
 
 export const boredomReasonPresets = [
@@ -46,6 +47,7 @@ export type CompletedBoredomEvent = {
 
 export type Treat = {
   id: number;
+  itemId: string;
   x: number;
   y: number;
   velocityX: number;
@@ -64,7 +66,7 @@ export type ActiveGameSeed = {
   flies: Fly[];
   treat: Treat | null;
   treatSpawnTicksRemaining: number;
-  multiplierTicksRemaining: number;
+  treatConsumed: boolean;
 };
 
 export type ActiveGame = ActiveGameSeed & {
@@ -165,12 +167,16 @@ export const createFly = (random = Math.random): Fly => {
 export const createFlyField = (count = flyCount, random = Math.random): Fly[] =>
   Array.from({ length: count }, () => createFly(random));
 
-export const createTreat = (random = Math.random): Treat => {
+export const createTreat = (
+  random = Math.random,
+  itemId = 'frappuccino'
+): Treat => {
   const angle = random() * Math.PI * 2;
   const speed = 0.22 + random() * 0.28;
 
   return {
     id: nextTreatId(),
+    itemId,
     x: 28 + Math.round(random() * 44),
     y: 32 + Math.round(random() * 28),
     velocityX: Math.cos(angle) * speed,
@@ -190,7 +196,7 @@ export const createGameSeed = (): ActiveGameSeed => ({
   flies: createFlyField(),
   treat: null,
   treatSpawnTicksRemaining: treatSpawnTicks,
-  multiplierTicksRemaining: 0,
+  treatConsumed: false,
 });
 
 export const createInitialMeetingState = (): MeetingState => ({
@@ -380,11 +386,9 @@ export const swatFly = (
 
   const flies = [...state.currentGame.flies];
   flies[flyIndex] = createReplacementFly();
-  const points =
-    state.currentGame.multiplierTicksRemaining > 0 ? treatBoostMultiplier : 1;
   const currentGame = {
     ...state.currentGame,
-    score: state.currentGame.score + points,
+    score: state.currentGame.score + 1,
     flies,
   };
 
@@ -395,23 +399,39 @@ export const swatFly = (
   return {
     ...state,
     currentGame,
-    lastActivityLabel: points > 1 ? `ハエを叩いた x${points}` : 'ハエを叩いた',
+    lastActivityLabel: 'ハエを叩いた',
   };
 };
 
 export const swatTreat = (state: MeetingState): MeetingState => {
-  if (!state.currentGame || !state.currentGame.treat) {
+  if (
+    !state.currentGame ||
+    !state.currentGame.treat ||
+    state.currentGame.treatConsumed
+  ) {
     return state;
+  }
+
+  const doubledScore = state.currentGame.score * treatBoostMultiplier;
+  const currentGame = {
+    ...state.currentGame,
+    treat: null,
+    treatConsumed: true,
+    score: doubledScore,
+  };
+
+  if (doubledScore >= targetScore) {
+    return settleCurrentGame(
+      state,
+      currentGame,
+      'ボーナスでノルマ達成し会議に復帰'
+    );
   }
 
   return {
     ...state,
-    currentGame: {
-      ...state.currentGame,
-      treat: null,
-      multiplierTicksRemaining: treatBoostTicks,
-    },
-    lastActivityLabel: 'フラペチーノで 2 倍ブースト',
+    currentGame,
+    lastActivityLabel: `ボーナスで現スコアが ×${treatBoostMultiplier}`,
   };
 };
 
@@ -524,11 +544,14 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     state.currentGame.treatSpawnTicksRemaining - 1
   );
   const shouldSpawnTreat =
-    state.currentGame.treat === null && nextSpawnRemaining === 0;
+    state.currentGame.treat === null &&
+    !state.currentGame.treatConsumed &&
+    nextSpawnRemaining === 0;
   let nextTreat: Treat | null = state.currentGame.treat;
 
   if (shouldSpawnTreat) {
-    nextTreat = createTreat();
+    const sponsored = pickSponsoredItem();
+    nextTreat = createTreat(Math.random, sponsored.id);
   } else if (nextTreat) {
     let treatX = nextTreat.x + nextTreat.velocityX;
     let treatY = nextTreat.y + nextTreat.velocityY;
@@ -552,11 +575,6 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     };
   }
 
-  const nextMultiplierTicks = Math.max(
-    0,
-    state.currentGame.multiplierTicksRemaining - 1
-  );
-
   const currentGame = {
     ...state.currentGame,
     flies: activeFlies,
@@ -564,7 +582,6 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     graceTicks,
     treat: nextTreat,
     treatSpawnTicksRemaining: nextSpawnRemaining,
-    multiplierTicksRemaining: nextMultiplierTicks,
   };
 
   if (currentGame.penalties >= maxPenalties) {
@@ -579,7 +596,7 @@ export const moveFlies = (state: MeetingState): MeetingState => {
       : triggeredCounter
         ? 'ハエが反撃した'
         : shouldSpawnTreat
-          ? 'フラペチーノが現れた'
+          ? 'ボーナスが現れた'
           : state.lastActivityLabel,
   };
 };
