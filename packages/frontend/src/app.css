@@ -929,13 +929,11 @@ button {
 
 .score-board-row {
   display: grid;
-  grid-template-columns: 24px minmax(0, 1fr) 70px 64px 50px;
-  align-items: baseline;
-  gap: 8px;
-  padding: 8px 10px;
+  gap: 6px;
+  padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 8px;
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.65);
 }
 
 .score-board-row.is-self {
@@ -943,9 +941,16 @@ button {
   border-color: #d8b94f;
 }
 
+.score-board-row-head {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 8px;
+}
+
 .score-board-rank {
   font-family: "Impact", "Haettenschweiler", sans-serif;
-  font-size: 1.32rem;
+  font-size: 1.4rem;
   text-align: center;
   color: rgba(24, 25, 27, 0.62);
 }
@@ -955,6 +960,9 @@ button {
   align-items: baseline;
   gap: 6px;
   min-width: 0;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 1.04rem;
+  font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -964,38 +972,156 @@ button {
   font-family: "VT323", "Courier New", monospace;
   font-size: 0.7rem;
   letter-spacing: 0.08em;
-  color: rgba(24, 25, 27, 0.5);
+  color: rgba(24, 25, 27, 0.55);
   text-transform: uppercase;
+  font-weight: 400;
 }
 
 .score-board-phase {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.85);
   font-family: "VT323", "Courier New", monospace;
-  font-size: 0.82rem;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.score-board-row-score {
+  display: flex;
+  gap: 14px;
+  padding-left: 36px;
+}
+
+.score-board-best,
+.score-board-current {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.32rem;
+  letter-spacing: 0.02em;
+}
+
+.score-board-best small,
+.score-board-current small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(24, 25, 27, 0.55);
+  text-transform: uppercase;
+}
+
+.score-board-reasons {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 36px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.score-board-reason {
+  padding: 2px 8px;
+  border: 1px solid rgba(24, 25, 27, 0.18);
+  border-radius: 999px;
+  background: rgba(24, 25, 27, 0.04);
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+
+.reason-aggregate {
+  display: grid;
+  gap: 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px;
+}
+
+.reason-aggregate-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reason-aggregate-eyebrow {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.04rem;
+  letter-spacing: 0.04em;
+}
+
+.reason-aggregate-head small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: rgba(24, 25, 27, 0.55);
 }
 
-.score-board-best {
+.reason-aggregate-empty {
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  text-align: center;
+  color: rgba(24, 25, 27, 0.55);
+  font-size: 0.92rem;
+}
+
+.reason-aggregate-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
   display: grid;
-  gap: 0;
+  gap: 6px;
+}
+
+.reason-aggregate-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) minmax(60px, 2fr) auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.reason-aggregate-rank {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.04rem;
+  color: rgba(24, 25, 27, 0.62);
+  text-align: center;
+}
+
+.reason-aggregate-label {
+  font-size: 0.92rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.reason-aggregate-bar {
+  position: relative;
+  height: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+.reason-aggregate-bar-fill {
+  display: block;
+  width: var(--reason-bar-width, 0%);
+  height: 100%;
+  background: var(--ink);
+  transition: width 220ms ease;
+}
+
+.reason-aggregate-count {
   font-family: "Impact", "Haettenschweiler", sans-serif;
   font-size: 1.18rem;
-  text-align: right;
-}
-
-.score-board-best small {
-  font-family: "VT323", "Courier New", monospace;
-  font-size: 0.66rem;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  color: rgba(24, 25, 27, 0.5);
-  text-transform: uppercase;
-}
-
-.score-board-current {
-  font-family: "Impact", "Haettenschweiler", sans-serif;
-  font-size: 1.32rem;
   text-align: right;
 }
 
