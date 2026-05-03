@@ -1,14 +1,10 @@
 import {
-  type BoredomReason,
   type MeetingState,
   formatClock,
   formatPercent,
   selectMeetingMetrics,
   targetScore,
 } from '../lib/meeting';
-
-const describeReason = (reason: BoredomReason): string =>
-  reason.kind === 'preset' ? reason.preset : reason.note;
 
 type MeetingSummaryProps = {
   state: MeetingState;
@@ -66,14 +62,9 @@ export const MeetingSummary = ({ state, onRestart }: MeetingSummaryProps) => {
         <section className="meeting-summary-reasons">
           <h3>退屈の理由</h3>
           <ul>
-            {state.boredomReasons.map((reason, index) => (
-              <li
-                className={`meeting-summary-reason ${
-                  reason.kind === 'note' ? 'is-note' : ''
-                }`}
-                key={`${reason.kind}-${index}`}
-              >
-                {describeReason(reason)}
+            {state.boredomReasons.map((preset) => (
+              <li className="meeting-summary-reason" key={preset}>
+                {preset}
               </li>
             ))}
           </ul>

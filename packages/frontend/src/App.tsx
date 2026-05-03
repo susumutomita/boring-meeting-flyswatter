@@ -21,7 +21,6 @@ import {
   endMeeting,
   getBoredomGauge,
   moveFlies,
-  noteBoredomReason,
   registerActivity,
   selectMeetingMetrics,
   selectSwattingFeedback,
@@ -37,8 +36,8 @@ import {
 
 const phaseStatusLabel: Record<string, string> = {
   idle: '待機',
-  monitoring: '監視中',
-  swatting: '介入中',
+  monitoring: '進行中',
+  swatting: 'ハエ叩き中',
   completed: '終了',
 };
 
@@ -331,9 +330,6 @@ const App = () => {
                   reasons={state.boredomReasons}
                   onTogglePreset={(preset) =>
                     setState((current) => toggleBoredomReason(current, preset))
-                  }
-                  onNoteChange={(note) =>
-                    setState((current) => noteBoredomReason(current, note))
                   }
                 />
               ) : null}

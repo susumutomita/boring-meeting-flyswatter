@@ -11,8 +11,6 @@ import {
   gameDurationSeconds,
   maxPenalties,
   moveFlies,
-  noteBoredomReason,
-  noteFreeTextLimit,
   openingGraceTicks,
   registerActivity,
   selectFlyInSwatReach,
@@ -340,9 +338,7 @@ describe('会議退屈度ロジック', () => {
     }
 
     const tagged = toggleBoredomReason(triggered, '議題が逸れた');
-    expect(tagged.boredomReasons).toEqual([
-      { kind: 'preset', preset: '議題が逸れた' },
-    ]);
+    expect(tagged.boredomReasons).toEqual(['議題が逸れた']);
   });
 
   it('同じ理由をもう一度タップすると外れるべき', () => {
@@ -355,28 +351,6 @@ describe('会議退屈度ロジック', () => {
     state = toggleBoredomReason(state, '一方通行');
 
     expect(state.boredomReasons).toHaveLength(0);
-  });
-
-  it('フリーテキストの理由は前後空白を除去し最大長で切り詰めるべき', () => {
-    let state = startMeeting();
-    for (let index = 0; index < boredomThresholdSeconds; index += 1) {
-      state = advanceMeeting(state, createGameFixture);
-    }
-    const longNote = `${' '.repeat(2)}${'a'.repeat(120)}${' '.repeat(2)}`;
-
-    state = noteBoredomReason(state, longNote);
-
-    const noteEntry = state.boredomReasons.find(
-      (reason) => reason.kind === 'note'
-    );
-    expect(noteEntry).toBeDefined();
-    if (noteEntry?.kind === 'note') {
-      expect(noteEntry.note.length).toBe(noteFreeTextLimit);
-      expect(noteEntry.note.startsWith(' ')).toBe(false);
-    }
-
-    state = noteBoredomReason(state, '   ');
-    expect(state.boredomReasons.some((r) => r.kind === 'note')).toBe(false);
   });
 
   it('完了フェーズではアクティビティも経過秒も進めないべき', () => {
