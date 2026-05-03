@@ -12,15 +12,11 @@ export const boredomReasonPresets = [
   '結論が出ない',
   '前提が共有されてない',
   '自分に関係ない',
+  'テンポが遅い',
+  '時間が長い',
 ] as const;
 
 export type BoredomReasonPreset = (typeof boredomReasonPresets)[number];
-
-export type BoredomReason =
-  | { kind: 'preset'; preset: BoredomReasonPreset }
-  | { kind: 'note'; note: string };
-
-export const noteFreeTextLimit = 80;
 
 export type MeetingPhase = 'idle' | 'monitoring' | 'swatting' | 'completed';
 
@@ -69,7 +65,7 @@ export type MeetingState = {
   lastActivityLabel: string;
   boredomGameTriggered: boolean;
   endedAtSecond: number | null;
-  boredomReasons: BoredomReason[];
+  boredomReasons: BoredomReasonPreset[];
 };
 
 export type MeetingMetrics = {
@@ -176,40 +172,16 @@ export const toggleBoredomReason = (
   if (!state.boredomGameTriggered) {
     return state;
   }
-  const isSelected = state.boredomReasons.some(
-    (reason) => reason.kind === 'preset' && reason.preset === preset
-  );
+  const isSelected = state.boredomReasons.includes(preset);
   if (isSelected) {
     return {
       ...state,
-      boredomReasons: state.boredomReasons.filter(
-        (reason) => !(reason.kind === 'preset' && reason.preset === preset)
-      ),
+      boredomReasons: state.boredomReasons.filter((entry) => entry !== preset),
     };
   }
   return {
     ...state,
-    boredomReasons: [...state.boredomReasons, { kind: 'preset', preset }],
-  };
-};
-
-export const noteBoredomReason = (
-  state: MeetingState,
-  rawNote: string
-): MeetingState => {
-  if (!state.boredomGameTriggered) {
-    return state;
-  }
-  const trimmed = rawNote.trim().slice(0, noteFreeTextLimit);
-  const others = state.boredomReasons.filter(
-    (reason) => reason.kind !== 'note'
-  );
-  if (trimmed.length === 0) {
-    return { ...state, boredomReasons: others };
-  }
-  return {
-    ...state,
-    boredomReasons: [...others, { kind: 'note', note: trimmed }],
+    boredomReasons: [...state.boredomReasons, preset],
   };
 };
 

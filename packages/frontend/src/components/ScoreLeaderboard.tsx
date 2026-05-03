@@ -11,8 +11,8 @@ type ScoreLeaderboardProps = {
 
 const phaseDot: Record<ScoreSnapshot['phase'], string> = {
   idle: '待機',
-  monitoring: '監視中',
-  swatting: '介入中',
+  monitoring: '進行中',
+  swatting: 'ハエ叩き中',
   completed: '終了',
 };
 
