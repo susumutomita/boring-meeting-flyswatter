@@ -21,6 +21,7 @@ type SwatterArenaProps = {
   onPointerEnter: () => void;
   onPointerLeave: () => void;
   onTargetClick: (target: SwatTarget) => void;
+  onTreatClick: () => void;
 };
 
 export const SwatterArena = ({
@@ -35,10 +36,13 @@ export const SwatterArena = ({
   onPointerEnter,
   onPointerLeave,
   onTargetClick,
+  onTreatClick,
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
   const lives = game ? maxPenalties - game.penalties : maxPenalties;
+  const treat = game?.treat ?? null;
+  const isBoosted = (game?.multiplierTicksRemaining ?? 0) > 0;
 
   return (
     <article className="panel arena-panel game-panel">
@@ -76,6 +80,11 @@ export const SwatterArena = ({
             <div className="arena-score" aria-hidden="true">
               {game.score}
             </div>
+            {isBoosted ? (
+              <div className="arena-boost-badge" aria-live="polite">
+                ×2 BOOST
+              </div>
+            ) : null}
             <div
               aria-label="ハエの反撃ゲージ"
               aria-valuemax={100}
@@ -172,6 +181,33 @@ export const SwatterArena = ({
                   }
                 />
               ))}
+              {treat ? (
+                <button
+                  aria-label="フラペチーノを叩いて 2 倍ブースト"
+                  className="treat-target"
+                  key={treat.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onTreatClick();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  style={
+                    {
+                      '--treat-x': `${treat.x}%`,
+                      '--treat-y': `${treat.y}%`,
+                      '--treat-bob': treat.bobSeed.toFixed(3),
+                    } as CSSProperties
+                  }
+                  type="button"
+                >
+                  <span className="treat-cream" />
+                  <span className="treat-cup" />
+                  <span className="treat-straw" />
+                  <span className="treat-face" aria-hidden="true">
+                    ◕‿◕
+                  </span>
+                </button>
+              ) : null}
               {swatter.impact ? (
                 <span
                   aria-hidden="true"

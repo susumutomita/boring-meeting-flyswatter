@@ -18,7 +18,10 @@ import {
   selectSwattingFeedback,
   startMeeting,
   swatFly,
+  swatTreat,
   toggleBoredomReason,
+  treatBoostMultiplier,
+  treatBoostTicks,
 } from './meeting';
 
 const createFlyFixture = (id: number): Fly => ({
@@ -41,6 +44,9 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
   penalties: 0,
   graceTicks,
   flies: [createFlyFixture(101), createFlyFixture(202)],
+  treat: null,
+  treatSpawnTicksRemaining: 0,
+  multiplierTicksRemaining: 0,
 });
 
 describe('会議退屈度ロジック', () => {
@@ -311,6 +317,81 @@ describe('会議退屈度ロジック', () => {
     expect(state.phase).toBe('monitoring');
     expect(state.currentGame).toBeNull();
     expect(state.completedEvents).toHaveLength(1);
+  });
+
+  it('スポーンタイマーが切れたタイミングでフラペチーノが現れるべき', () => {
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(),
+        atSecond: boredomThresholdSeconds,
+        treatSpawnTicksRemaining: 1,
+      },
+    };
+
+    const nextState = moveFlies(state);
+
+    expect(nextState.currentGame?.treat).not.toBeNull();
+    expect(nextState.currentGame?.treatSpawnTicksRemaining).toBe(0);
+    expect(nextState.lastActivityLabel).toBe('フラペチーノが現れた');
+  });
+
+  it('フラペチーノを叩くと倍率ブーストが入りハエ叩きが 2 ポイントになるべき', () => {
+    const baseFly = { ...createFlyFixture(303) };
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(),
+        atSecond: boredomThresholdSeconds,
+        flies: [baseFly],
+        treat: {
+          id: 99,
+          x: 50,
+          y: 50,
+          velocityX: 0.3,
+          velocityY: 0.2,
+          bobSeed: 0,
+          age: 4,
+        },
+      },
+    };
+
+    const afterTreat = swatTreat(state);
+    expect(afterTreat.currentGame?.treat).toBeNull();
+    expect(afterTreat.currentGame?.multiplierTicksRemaining).toBe(
+      treatBoostTicks
+    );
+
+    const afterFly = swatFly(afterTreat, baseFly.id, () =>
+      createFlyFixture(404)
+    );
+    expect(afterFly.currentGame?.score).toBe(treatBoostMultiplier);
+    expect(afterFly.lastActivityLabel).toBe(
+      `ハエを叩いた x${treatBoostMultiplier}`
+    );
+  });
+
+  it('倍率ブーストは moveFlies の毎ティックで減っていきゼロでフラペチーノ効果が切れるべき', () => {
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(),
+        atSecond: boredomThresholdSeconds,
+        multiplierTicksRemaining: 2,
+      },
+    };
+
+    const after1 = moveFlies(state);
+    expect(after1.currentGame?.multiplierTicksRemaining).toBe(1);
+
+    const after2 = moveFlies(after1);
+    expect(after2.currentGame?.multiplierTicksRemaining).toBe(0);
+
+    const after3 = moveFlies(after2);
+    expect(after3.currentGame?.multiplierTicksRemaining).toBe(0);
   });
 
   it('ミーティング終了で完了フェーズに移り終了時刻を記録するべき', () => {

@@ -28,6 +28,7 @@ import {
   selectSwattingFeedback,
   startMeeting,
   swatFly,
+  swatTreat,
   toggleBoredomReason,
 } from './lib/meeting';
 import {
@@ -356,6 +357,7 @@ const App = () => {
               onPointerEnter={handlePointerEnter}
               onPointerLeave={handlePointerLeave}
               onTargetClick={handleKeyboardSwat}
+              onTreatClick={() => setState((current) => swatTreat(current))}
             />
           )}
 
