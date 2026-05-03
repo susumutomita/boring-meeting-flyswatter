@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
 import { PipMeter } from './components/PipMeter';
+import { ReasonPicker } from './components/ReasonPicker';
 import { RoomConnect } from './components/RoomConnect';
 import { ScoreLeaderboard } from './components/ScoreLeaderboard';
 import { SwatterArena } from './components/SwatterArena';
@@ -20,19 +21,19 @@ import {
   endMeeting,
   getBoredomGauge,
   moveFlies,
+  noteBoredomReason,
   registerActivity,
   selectMeetingMetrics,
   selectSwattingFeedback,
   startMeeting,
   swatFly,
+  toggleBoredomReason,
 } from './lib/meeting';
 import {
   type ScoreSnapshot,
   sanitizeDisplayName,
   sanitizeRoomCode,
 } from './lib/scoreShare';
-
-const activityLabels = ['発言', 'メモ', '議題'] as const;
 
 const phaseStatusLabel: Record<string, string> = {
   idle: '待機',
@@ -324,37 +325,40 @@ const App = () => {
           )}
 
           {isCompleted ? null : (
-            <MeetingHud
-              boredomGauge={boredomGauge}
-              metrics={metrics}
-              activityLabels={activityLabels}
-              onActivity={(label) =>
-                setState((current) => registerActivity(current, label))
-              }
-            />
+            <MeetingHud boredomGauge={boredomGauge} metrics={metrics}>
+              {state.boredomGameTriggered ? (
+                <ReasonPicker
+                  reasons={state.boredomReasons}
+                  onTogglePreset={(preset) =>
+                    setState((current) => toggleBoredomReason(current, preset))
+                  }
+                  onNoteChange={(note) =>
+                    setState((current) => noteBoredomReason(current, note))
+                  }
+                />
+              ) : null}
+
+              <RoomConnect
+                roomCode={roomCodeInput}
+                displayName={displayNameInput}
+                isJoined={isShareJoined}
+                onRoomCodeChange={setRoomCodeInput}
+                onDisplayNameChange={setDisplayNameInput}
+                onJoin={() => setIsShareJoined(true)}
+                onLeave={() => setIsShareJoined(false)}
+              />
+
+              {isShareJoined ? (
+                <ScoreLeaderboard
+                  peers={sharedPeers}
+                  selfPeerId={selfPeerId}
+                  status={shareStatus}
+                  roomCode={sanitizedRoomCode}
+                  participantCount={participantCount}
+                />
+              ) : null}
+            </MeetingHud>
           )}
-        </section>
-
-        <section className="share-grid">
-          <RoomConnect
-            roomCode={roomCodeInput}
-            displayName={displayNameInput}
-            isJoined={isShareJoined}
-            onRoomCodeChange={setRoomCodeInput}
-            onDisplayNameChange={setDisplayNameInput}
-            onJoin={() => setIsShareJoined(true)}
-            onLeave={() => setIsShareJoined(false)}
-          />
-
-          {isShareJoined ? (
-            <ScoreLeaderboard
-              peers={sharedPeers}
-              selfPeerId={selfPeerId}
-              status={shareStatus}
-              roomCode={sanitizedRoomCode}
-              participantCount={participantCount}
-            />
-          ) : null}
         </section>
       </main>
 
