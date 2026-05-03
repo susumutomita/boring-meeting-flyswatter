@@ -660,6 +660,236 @@ button {
   justify-content: flex-end;
 }
 
+.share-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.4fr);
+  gap: 16px;
+  margin-top: 16px;
+}
+
+@media (max-width: 760px) {
+  .share-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.room-connect {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.room-connect-fields {
+  display: grid;
+  gap: 10px;
+}
+
+.room-connect-field {
+  display: grid;
+  gap: 4px;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.room-connect-field input {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 1rem;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+  background: #ffffff;
+}
+
+.room-connect-field input:disabled {
+  background: rgba(0, 0, 0, 0.04);
+  color: rgba(24, 25, 27, 0.45);
+}
+
+.room-connect-field small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  color: rgba(24, 25, 27, 0.45);
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+.score-board {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.score-board-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.score-board-title {
+  display: grid;
+  gap: 2px;
+}
+
+.score-board-eyebrow {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.55);
+}
+
+.score-board-title strong {
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 1.04rem;
+  letter-spacing: 0.02em;
+}
+
+.score-board-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "VT323", "Courier New", monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.score-board-pill {
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 0.78rem;
+  background: rgba(255, 255, 255, 0.65);
+  color: rgba(24, 25, 27, 0.7);
+}
+
+.score-board-pill-host {
+  background: #18191b;
+  color: #f1f2f4;
+  border-color: #18191b;
+}
+
+.score-board-pill-client {
+  background: #b6e3c4;
+  color: #214a2c;
+  border-color: #6cba87;
+}
+
+.score-board-pill-connecting {
+  background: #fff2c0;
+  color: #6c5a14;
+  border-color: #d8b94f;
+}
+
+.score-board-pill-error {
+  background: #f5b7b7;
+  color: #631c1c;
+  border-color: #c25151;
+}
+
+.score-board-count {
+  font-size: 0.78rem;
+  color: rgba(24, 25, 27, 0.55);
+}
+
+.score-board-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.score-board-empty {
+  padding: 12px;
+  border: 1px dashed var(--line);
+  border-radius: 8px;
+  text-align: center;
+  color: rgba(24, 25, 27, 0.55);
+  font-size: 0.92rem;
+}
+
+.score-board-row {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) 70px 64px 50px;
+  align-items: baseline;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.score-board-row.is-self {
+  background: #fff7d6;
+  border-color: #d8b94f;
+}
+
+.score-board-rank {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.32rem;
+  text-align: center;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.score-board-name {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.score-board-name small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  color: rgba(24, 25, 27, 0.5);
+  text-transform: uppercase;
+}
+
+.score-board-phase {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.55);
+}
+
+.score-board-best {
+  display: grid;
+  gap: 0;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.18rem;
+  text-align: right;
+}
+
+.score-board-best small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.66rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(24, 25, 27, 0.5);
+  text-transform: uppercase;
+}
+
+.score-board-current {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.32rem;
+  text-align: right;
+}
+
 .audio-error,
 .pip-hint {
   margin: 0 0 12px;

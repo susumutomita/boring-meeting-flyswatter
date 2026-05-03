@@ -1,12 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
 import { PipMeter } from './components/PipMeter';
+import { RoomConnect } from './components/RoomConnect';
+import { ScoreLeaderboard } from './components/ScoreLeaderboard';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
 import { useDocumentPip } from './hooks/useDocumentPip';
 import { useMeetingTick } from './hooks/useMeetingTick';
+import { useScoreShare } from './hooks/useScoreShare';
 import { useSwatter } from './hooks/useSwatter';
 import { useTabAudioActivity } from './hooks/useTabAudioActivity';
 import {
@@ -23,6 +26,11 @@ import {
   startMeeting,
   swatFly,
 } from './lib/meeting';
+import {
+  type ScoreSnapshot,
+  sanitizeDisplayName,
+  sanitizeRoomCode,
+} from './lib/scoreShare';
 
 const activityLabels = ['発言', 'メモ', '議題'] as const;
 
@@ -33,10 +41,65 @@ const phaseStatusLabel: Record<string, string> = {
   completed: '終了',
 };
 
+const readPersisted = (key: string, fallback: string): string => {
+  if (typeof window === 'undefined') {
+    return fallback;
+  }
+  try {
+    return window.localStorage.getItem(key) ?? fallback;
+  } catch {
+    return fallback;
+  }
+};
+
+const writePersisted = (key: string, value: string) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // ignore storage failures (private mode, quota)
+  }
+};
+
+const ensureSelfPeerId = (): string => {
+  const persisted = readPersisted('bmf:self-peer-id', '');
+  if (persisted.length > 0) {
+    return persisted;
+  }
+  const generated =
+    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+      ? crypto.randomUUID()
+      : `peer-${Math.random().toString(36).slice(2, 10)}`;
+  writePersisted('bmf:self-peer-id', generated);
+  return generated;
+};
+
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [roomCodeInput, setRoomCodeInput] = useState(() =>
+    readPersisted('bmf:room-code', '')
+  );
+  const [displayNameInput, setDisplayNameInput] = useState(() =>
+    readPersisted('bmf:display-name', '')
+  );
+  const [isShareJoined, setIsShareJoined] = useState(false);
+  const [bestScore, setBestScore] = useState(0);
+  const selfPeerId = useMemo(ensureSelfPeerId, []);
+
+  const sanitizedRoomCode = sanitizeRoomCode(roomCodeInput);
+  const sanitizedDisplayName = sanitizeDisplayName(displayNameInput);
+
+  useEffect(() => {
+    writePersisted('bmf:room-code', roomCodeInput);
+  }, [roomCodeInput]);
+
+  useEffect(() => {
+    writePersisted('bmf:display-name', displayNameInput);
+  }, [displayNameInput]);
 
   const isRunning = state.phase === 'monitoring' || state.phase === 'swatting';
   const isSwatting = state.phase === 'swatting';
@@ -83,6 +146,47 @@ const App = () => {
     isActive: state.currentGame !== null,
     flies,
     onSwatFly: (flyId) => setState((current) => swatFly(current, flyId)),
+  });
+
+  useEffect(() => {
+    const currentScore = state.currentGame?.score ?? 0;
+    if (currentScore > bestScore) {
+      setBestScore(currentScore);
+    }
+    if (state.phase === 'completed') {
+      const completed = state.completedEvents[0];
+      if (completed && completed.swats > bestScore) {
+        setBestScore(completed.swats);
+      }
+    }
+  }, [state, bestScore]);
+
+  const localSnapshot = useMemo<ScoreSnapshot>(
+    () => ({
+      peerId: selfPeerId,
+      displayName: sanitizedDisplayName,
+      score: state.currentGame?.score ?? 0,
+      bestScore,
+      phase: state.phase,
+      updatedAt: Date.now(),
+    }),
+    [
+      selfPeerId,
+      sanitizedDisplayName,
+      state.currentGame?.score,
+      state.phase,
+      bestScore,
+    ]
+  );
+
+  const {
+    peers: sharedPeers,
+    status: shareStatus,
+    participantCount,
+  } = useScoreShare({
+    enabled: isShareJoined,
+    roomCode: sanitizedRoomCode,
+    localSnapshot,
   });
 
   const metrics = selectMeetingMetrics(state);
@@ -229,6 +333,28 @@ const App = () => {
               }
             />
           )}
+        </section>
+
+        <section className="share-grid">
+          <RoomConnect
+            roomCode={roomCodeInput}
+            displayName={displayNameInput}
+            isJoined={isShareJoined}
+            onRoomCodeChange={setRoomCodeInput}
+            onDisplayNameChange={setDisplayNameInput}
+            onJoin={() => setIsShareJoined(true)}
+            onLeave={() => setIsShareJoined(false)}
+          />
+
+          {isShareJoined ? (
+            <ScoreLeaderboard
+              peers={sharedPeers}
+              selfPeerId={selfPeerId}
+              status={shareStatus}
+              roomCode={sanitizedRoomCode}
+              participantCount={participantCount}
+            />
+          ) : null}
         </section>
       </main>
 
