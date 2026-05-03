@@ -11,6 +11,7 @@ import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
 import { useDocumentPip } from './hooks/useDocumentPip';
 import { useMeetingTick } from './hooks/useMeetingTick';
+import { useMicrophoneActivity } from './hooks/useMicrophoneActivity';
 import { useScoreShare } from './hooks/useScoreShare';
 import { useSwatter } from './hooks/useSwatter';
 import { useTabAudioActivity } from './hooks/useTabAudioActivity';
@@ -77,9 +78,11 @@ const ensureSelfPeerId = (): string => {
   return generated;
 };
 
+type AudioSource = 'off' | 'tab' | 'mic';
+
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
-  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioSource, setAudioSource] = useState<AudioSource>('off');
   const [audioError, setAudioError] = useState<string | null>(null);
   const [roomCodeInput, setRoomCodeInput] = useState(() =>
     readPersisted('bmf:room-code', '')
@@ -122,18 +125,37 @@ const App = () => {
       setState((current) => registerActivity(current, label)),
   });
 
-  const { isCapturing, levelDb } = useTabAudioActivity({
-    enabled: audioEnabled && isRunning,
-    onSpeech: () =>
-      setState((current) => registerActivity(current, '発話を検知')),
-    onError: (error) => {
-      setAudioError(error.message);
-      setAudioEnabled(false);
-    },
-    onCaptureEnd: () => {
-      setAudioEnabled(false);
-    },
+  const handleSpeech = () =>
+    setState((current) => registerActivity(current, '発話を検知'));
+  const handleAudioError = (error: Error) => {
+    setAudioError(error.message);
+    setAudioSource('off');
+  };
+  const handleCaptureEnd = () => {
+    setAudioSource('off');
+  };
+
+  const tabAudio = useTabAudioActivity({
+    enabled: audioSource === 'tab' && isRunning,
+    onSpeech: handleSpeech,
+    onError: handleAudioError,
+    onCaptureEnd: handleCaptureEnd,
   });
+  const micAudio = useMicrophoneActivity({
+    enabled: audioSource === 'mic' && isRunning,
+    onSpeech: handleSpeech,
+    onError: handleAudioError,
+    onCaptureEnd: handleCaptureEnd,
+  });
+
+  const isCapturing =
+    audioSource === 'tab' ? tabAudio.isCapturing : micAudio.isCapturing;
+  const levelDb =
+    audioSource === 'tab'
+      ? tabAudio.levelDb
+      : audioSource === 'mic'
+        ? micAudio.levelDb
+        : Number.NEGATIVE_INFINITY;
 
   const {
     swatter,
@@ -208,11 +230,11 @@ const App = () => {
   });
 
   useEffect(() => {
-    if (!audioEnabled) {
+    if (audioSource === 'off') {
       return;
     }
     setAudioError(null);
-  }, [audioEnabled]);
+  }, [audioSource]);
 
   const primaryButton = isIdle
     ? {
@@ -232,9 +254,19 @@ const App = () => {
           primary: false,
         };
 
-  const audioToggleLabel = audioEnabled
-    ? '音声共有を停止'
-    : 'ミーティング音声を共有';
+  const cycleAudioSource = () => {
+    setAudioSource((current) => {
+      if (current === 'off') return 'tab';
+      if (current === 'tab') return 'mic';
+      return 'off';
+    });
+  };
+
+  const audioSourceLabel: Record<AudioSource, string> = {
+    off: '音声検知 オフ',
+    tab: 'タブ音声で検知',
+    mic: 'マイクで検知',
+  };
 
   const handleToastClick = () => {
     window.focus();
@@ -265,11 +297,12 @@ const App = () => {
           <div className="top-actions" data-no-activity-capture="true">
             {isRunning ? (
               <button
-                className={`action ${audioEnabled ? 'action-primary' : ''}`}
-                onClick={() => setAudioEnabled((current) => !current)}
+                className={`action ${audioSource !== 'off' ? 'action-primary' : ''}`}
+                onClick={cycleAudioSource}
+                title="クリックで切替: オフ → タブ音声 → マイク"
                 type="button"
               >
-                {audioToggleLabel}
+                {audioSourceLabel[audioSource]}
               </button>
             ) : null}
             <button
