@@ -1,4 +1,4 @@
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
   type MeetingMetrics,
   formatClock,
@@ -8,15 +8,13 @@ import {
 type MeetingHudProps = {
   boredomGauge: number;
   metrics: MeetingMetrics;
-  activityLabels: readonly string[];
-  onActivity: (label: string) => void;
+  children?: ReactNode;
 };
 
 export const MeetingHud = ({
   boredomGauge,
   metrics,
-  activityLabels,
-  onActivity,
+  children,
 }: MeetingHudProps) => (
   <aside className="panel live-panel compact-panel">
     <div className="compact-meter">
@@ -44,18 +42,7 @@ export const MeetingHud = ({
       </div>
     </div>
 
-    <div className="activity-pad" data-no-activity-capture="true">
-      {activityLabels.map((label) => (
-        <button
-          className="activity-chip"
-          key={label}
-          onClick={() => onActivity(label)}
-          type="button"
-        >
-          {label}
-        </button>
-      ))}
-    </div>
+    {children}
 
     <div className="side-stats">
       <div className="stat-tile">

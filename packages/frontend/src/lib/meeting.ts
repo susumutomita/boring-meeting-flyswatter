@@ -6,6 +6,22 @@ export const targetScore = 10;
 export const maxPenalties = 5;
 export const openingGraceTicks = 28;
 
+export const boredomReasonPresets = [
+  '議題が逸れた',
+  '一方通行',
+  '結論が出ない',
+  '前提が共有されてない',
+  '自分に関係ない',
+] as const;
+
+export type BoredomReasonPreset = (typeof boredomReasonPresets)[number];
+
+export type BoredomReason =
+  | { kind: 'preset'; preset: BoredomReasonPreset }
+  | { kind: 'note'; note: string };
+
+export const noteFreeTextLimit = 80;
+
 export type MeetingPhase = 'idle' | 'monitoring' | 'swatting' | 'completed';
 
 export type Fly = {
@@ -53,6 +69,7 @@ export type MeetingState = {
   lastActivityLabel: string;
   boredomGameTriggered: boolean;
   endedAtSecond: number | null;
+  boredomReasons: BoredomReason[];
 };
 
 export type MeetingMetrics = {
@@ -143,6 +160,7 @@ export const createInitialMeetingState = (): MeetingState => ({
   lastActivityLabel: '待機中',
   boredomGameTriggered: false,
   endedAtSecond: null,
+  boredomReasons: [],
 });
 
 export const startMeeting = (): MeetingState => ({
@@ -150,6 +168,50 @@ export const startMeeting = (): MeetingState => ({
   phase: 'monitoring',
   lastActivityLabel: '会議を開始',
 });
+
+export const toggleBoredomReason = (
+  state: MeetingState,
+  preset: BoredomReasonPreset
+): MeetingState => {
+  if (!state.boredomGameTriggered) {
+    return state;
+  }
+  const isSelected = state.boredomReasons.some(
+    (reason) => reason.kind === 'preset' && reason.preset === preset
+  );
+  if (isSelected) {
+    return {
+      ...state,
+      boredomReasons: state.boredomReasons.filter(
+        (reason) => !(reason.kind === 'preset' && reason.preset === preset)
+      ),
+    };
+  }
+  return {
+    ...state,
+    boredomReasons: [...state.boredomReasons, { kind: 'preset', preset }],
+  };
+};
+
+export const noteBoredomReason = (
+  state: MeetingState,
+  rawNote: string
+): MeetingState => {
+  if (!state.boredomGameTriggered) {
+    return state;
+  }
+  const trimmed = rawNote.trim().slice(0, noteFreeTextLimit);
+  const others = state.boredomReasons.filter(
+    (reason) => reason.kind !== 'note'
+  );
+  if (trimmed.length === 0) {
+    return { ...state, boredomReasons: others };
+  }
+  return {
+    ...state,
+    boredomReasons: [...others, { kind: 'note', note: trimmed }],
+  };
+};
 
 export const endMeeting = (state: MeetingState): MeetingState => {
   if (state.phase === 'idle' || state.phase === 'completed') {

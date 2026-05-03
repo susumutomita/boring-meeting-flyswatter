@@ -1,10 +1,14 @@
 import {
+  type BoredomReason,
   type MeetingState,
   formatClock,
   formatPercent,
   selectMeetingMetrics,
   targetScore,
 } from '../lib/meeting';
+
+const describeReason = (reason: BoredomReason): string =>
+  reason.kind === 'preset' ? reason.preset : reason.note;
 
 type MeetingSummaryProps = {
   state: MeetingState;
@@ -57,6 +61,24 @@ export const MeetingSummary = ({ state, onRestart }: MeetingSummaryProps) => {
           <dd>{swatPenaltyLabel}</dd>
         </div>
       </dl>
+
+      {state.boredomReasons.length > 0 ? (
+        <section className="meeting-summary-reasons">
+          <h3>退屈の理由</h3>
+          <ul>
+            {state.boredomReasons.map((reason, index) => (
+              <li
+                className={`meeting-summary-reason ${
+                  reason.kind === 'note' ? 'is-note' : ''
+                }`}
+                key={`${reason.kind}-${index}`}
+              >
+                {describeReason(reason)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <div className="meeting-summary-actions">
         <button

@@ -254,8 +254,8 @@ button {
   display: block;
   width: var(--arena-pressure);
   height: 100%;
-  background: linear-gradient(90deg, var(--green), var(--amber), var(--red));
-  transition: width 160ms linear;
+  background: var(--red);
+  transition: width 160ms linear, background-color 160ms linear;
 }
 
 .fly-zone {
@@ -654,32 +654,142 @@ button {
   font-weight: 600;
 }
 
+.meeting-summary-reasons {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 247, 214, 0.6);
+}
+
+.meeting-summary-reasons h3 {
+  margin: 0;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.92rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.meeting-summary-reasons ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.meeting-summary-reason {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.8);
+  font-size: 0.86rem;
+}
+
+.meeting-summary-reason.is-note {
+  border-radius: 8px;
+  background: rgba(24, 25, 27, 0.06);
+}
+
 .meeting-summary-actions {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
 }
 
-.share-grid {
-  display: grid;
-  grid-template-columns: minmax(260px, 1fr) minmax(280px, 1.4fr);
-  gap: 16px;
-  margin-top: 16px;
+.compact-panel .room-connect,
+.compact-panel .score-board,
+.compact-panel .reason-picker {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 12px;
 }
 
-@media (max-width: 760px) {
-  .share-grid {
-    grid-template-columns: 1fr;
-  }
+.reason-picker {
+  display: grid;
+  gap: 10px;
+}
+
+.reason-picker-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.reason-picker-eyebrow {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.reason-picker-head small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.55);
+}
+
+.reason-picker-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.reason-tag {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 0.84rem;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease, border-color 120ms
+    ease;
+}
+
+.reason-tag:hover {
+  background: #fff7d6;
+}
+
+.reason-tag.is-selected {
+  background: #18191b;
+  color: #f1f2f4;
+  border-color: #18191b;
+}
+
+.reason-picker-note {
+  display: grid;
+  gap: 4px;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.55);
+}
+
+.reason-picker-note textarea {
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-family: "Inter", "Helvetica Neue", sans-serif;
+  font-size: 0.92rem;
+  letter-spacing: normal;
+  text-transform: none;
+  color: var(--ink);
+  background: #ffffff;
+  resize: vertical;
+  min-height: 56px;
 }
 
 .room-connect {
   display: grid;
   gap: 12px;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.7);
 }
 
 .room-connect-fields {
@@ -725,7 +835,6 @@ button {
 .score-board {
   display: grid;
   gap: 12px;
-  padding: 16px;
 }
 
 .score-board-head {
