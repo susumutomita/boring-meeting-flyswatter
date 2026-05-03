@@ -447,6 +447,18 @@ describe('会議退屈度ロジック', () => {
     expect(state.boredomReasons).toHaveLength(0);
   });
 
+  it('退屈の理由は 1 つだけ選べて、別の理由を押すと前の選択が外れるべき', () => {
+    let state = startMeeting();
+    for (let index = 0; index < boredomThresholdSeconds; index += 1) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+
+    state = toggleBoredomReason(state, '議題が逸れた');
+    state = toggleBoredomReason(state, '一方通行');
+
+    expect(state.boredomReasons).toEqual(['一方通行']);
+  });
+
   it('完了フェーズではアクティビティも経過秒も進めないべき', () => {
     const completed: ReturnType<typeof endMeeting> = endMeeting({
       ...startMeeting(),

@@ -17,6 +17,7 @@ export const boredomReasonPresets = [
   '自分に関係ない',
   'テンポが遅い',
   '時間が長い',
+  '実は退屈ではなかった',
 ] as const;
 
 export type BoredomReasonPreset = (typeof boredomReasonPresets)[number];
@@ -224,12 +225,12 @@ export const toggleBoredomReason = (
   if (isSelected) {
     return {
       ...state,
-      boredomReasons: state.boredomReasons.filter((entry) => entry !== preset),
+      boredomReasons: [],
     };
   }
   return {
     ...state,
-    boredomReasons: [...state.boredomReasons, preset],
+    boredomReasons: [preset],
   };
 };
 

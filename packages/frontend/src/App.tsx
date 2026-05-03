@@ -1,12 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
 import { PipMeter } from './components/PipMeter';
-import { ReasonAggregate } from './components/ReasonAggregate';
 import { ReasonPicker } from './components/ReasonPicker';
-import { RoomConnect } from './components/RoomConnect';
-import { ScoreLeaderboard } from './components/ScoreLeaderboard';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
 import { useDocumentPip } from './hooks/useDocumentPip';
@@ -22,7 +18,6 @@ import {
   endMeeting,
   moveFlies,
   registerActivity,
-  selectMeetingMetrics,
   selectSwattingFeedback,
   startMeeting,
   swatFly,
@@ -221,7 +216,6 @@ const App = () => {
     localSnapshot,
   });
 
-  const metrics = selectMeetingMetrics(state);
   const swattingFeedback = state.currentGame
     ? selectSwattingFeedback(state.currentGame)
     : null;
@@ -317,7 +311,42 @@ const App = () => {
         </header>
 
         {audioError ? (
-          <output className="audio-error">{audioError}</output>
+          <div className="audio-error">
+            <output>{audioError}</output>
+            <div className="audio-error-actions">
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('off');
+                  window.requestAnimationFrame(() => setAudioSource('tab'));
+                }}
+                type="button"
+              >
+                タブ音声で再試行
+              </button>
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('mic');
+                }}
+                type="button"
+              >
+                マイク検知に切替
+              </button>
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('off');
+                }}
+                type="button"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {!pipSupported && isRunning ? (
@@ -326,86 +355,80 @@ const App = () => {
           </output>
         ) : null}
 
-        <section className="play-grid simple-play-grid">
+        <section className="play-stage">
           {isCompleted ? (
             <MeetingSummary
               state={state}
               onRestart={() => setState(createInitialMeetingState())}
+              roomCodeInput={roomCodeInput}
+              displayNameInput={displayNameInput}
+              isShareJoined={isShareJoined}
+              shareStatus={shareStatus}
+              sharedPeers={sharedPeers}
+              participantCount={participantCount}
+              selfPeerId={selfPeerId}
+              onRoomCodeChange={setRoomCodeInput}
+              onDisplayNameChange={setDisplayNameInput}
+              onJoinShare={() => setIsShareJoined(true)}
+              onLeaveShare={() => setIsShareJoined(false)}
+              onTogglePreset={(preset) =>
+                setState((current) => toggleBoredomReason(current, preset))
+              }
             />
           ) : (
-            <SwatterArena
-              game={state.currentGame}
-              feedback={swattingFeedback}
-              swatter={swatter}
-              knockedFlyIds={knockedFlyIds}
-              idleLabel={
-                isIdle
-                  ? '右上のボタンから'
-                  : state.boredomGameTriggered
-                    ? '退屈ポイント検知済み'
-                    : '会議を観測中'
-              }
-              idleValue={
-                isIdle
-                  ? 'ミーティング開始'
-                  : state.boredomGameTriggered
-                    ? '終了で振り返り'
-                    : '沈黙を待機'
-              }
-              onPointerDown={handlePointerDown}
-              onPointerMove={handlePointerMove}
-              onPointerEnter={handlePointerEnter}
-              onPointerLeave={handlePointerLeave}
-              onTargetClick={handleKeyboardSwat}
-              onTreatClick={(point) => {
-                treatPopupIdRef.current += 1;
-                const popupId = treatPopupIdRef.current;
-                setTreatBoostPopup({ id: popupId, x: point.x, y: point.y });
-                setState((current) => swatTreat(current));
-                window.setTimeout(() => {
-                  setTreatBoostPopup((current) =>
-                    current && current.id === popupId ? null : current
-                  );
-                }, 1100);
-              }}
-              treatBoostPopup={treatBoostPopup}
-            />
-          )}
-
-          {isCompleted ? null : (
-            <MeetingHud metrics={metrics}>
-              {state.boredomGameTriggered ? (
-                <ReasonPicker
-                  reasons={state.boredomReasons}
-                  onTogglePreset={(preset) =>
-                    setState((current) => toggleBoredomReason(current, preset))
-                  }
-                />
-              ) : null}
-
-              <RoomConnect
-                roomCode={roomCodeInput}
-                displayName={displayNameInput}
-                isJoined={isShareJoined}
-                onRoomCodeChange={setRoomCodeInput}
-                onDisplayNameChange={setDisplayNameInput}
-                onJoin={() => setIsShareJoined(true)}
-                onLeave={() => setIsShareJoined(false)}
+            <>
+              <SwatterArena
+                game={state.currentGame}
+                feedback={swattingFeedback}
+                swatter={swatter}
+                knockedFlyIds={knockedFlyIds}
+                idleLabel={
+                  isIdle
+                    ? '右上のボタンから'
+                    : state.boredomGameTriggered
+                      ? '退屈ポイント検知済み'
+                      : '会議を観測中'
+                }
+                idleValue={
+                  isIdle
+                    ? 'ミーティング開始'
+                    : state.boredomGameTriggered
+                      ? '終了で振り返り'
+                      : '沈黙を待機'
+                }
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerEnter={handlePointerEnter}
+                onPointerLeave={handlePointerLeave}
+                onTargetClick={handleKeyboardSwat}
+                onTreatClick={(point) => {
+                  treatPopupIdRef.current += 1;
+                  const popupId = treatPopupIdRef.current;
+                  setTreatBoostPopup({ id: popupId, x: point.x, y: point.y });
+                  setState((current) => swatTreat(current));
+                  window.setTimeout(() => {
+                    setTreatBoostPopup((current) =>
+                      current && current.id === popupId ? null : current
+                    );
+                  }, 1100);
+                }}
+                treatBoostPopup={treatBoostPopup}
               />
 
-              {isShareJoined ? (
-                <>
-                  <ScoreLeaderboard
-                    peers={sharedPeers}
-                    selfPeerId={selfPeerId}
-                    status={shareStatus}
-                    roomCode={sanitizedRoomCode}
-                    participantCount={participantCount}
+              {state.boredomGameTriggered &&
+              state.boredomReasons.length === 0 ? (
+                <div className="floating-reason-picker">
+                  <ReasonPicker
+                    reasons={state.boredomReasons}
+                    onTogglePreset={(preset) =>
+                      setState((current) =>
+                        toggleBoredomReason(current, preset)
+                      )
+                    }
                   />
-                  <ReasonAggregate peers={sharedPeers} />
-                </>
+                </div>
               ) : null}
-            </MeetingHud>
+            </>
           )}
         </section>
       </main>
