@@ -25,10 +25,11 @@ import {
   targetScore,
 } from './lib/meeting';
 
-const activityButtons = ['発言した', 'メモを取った', 'アジェンダを切り替えた'];
-const swatImpactDelayMs = 90;
-const swatRecoverDelayMs = 260;
-const splatLifetimeMs = 680;
+const activityButtons = ['発言', 'メモ', '議題'];
+const swatImpactDelayMs = 70;
+const knockdownLifetimeMs = 620;
+const swatRecoverDelayMs = 190;
+const splatLifetimeMs = 420;
 
 type ArenaPoint = {
   x: number;
@@ -43,23 +44,35 @@ type FlySplat = SwatImpact & {
   rotation: number;
 };
 
+type KnockedFly = SwatImpact & {
+  drift: number;
+  flyId: number;
+  rotation: number;
+};
+
+type SwatTarget = ArenaPoint & {
+  flyId: number;
+};
+
 type SwatterPose = ArenaPoint & {
   rotation: number;
   swingKey: number;
   isTracking: boolean;
   isSwinging: boolean;
   impact: SwatImpact | null;
+  knockdowns: KnockedFly[];
   splats: FlySplat[];
 };
 
 const initialSwatterPose: SwatterPose = {
   x: 52,
   y: 58,
-  rotation: -8,
+  rotation: 0,
   swingKey: 0,
   isTracking: false,
   isSwinging: false,
   impact: null,
+  knockdowns: [],
   splats: [],
 };
 
@@ -88,6 +101,20 @@ const App = () => {
   const swattingFeedback = state.currentGame
     ? selectSwattingFeedback(state.currentGame)
     : null;
+  const gameScore = state.currentGame?.score ?? 0;
+  const gameTime = state.currentGame
+    ? formatClock(state.currentGame.remainingSeconds)
+    : formatClock(0);
+  const gameLives = state.currentGame
+    ? maxPenalties - state.currentGame.penalties
+    : maxPenalties;
+  const idleCountdown = Math.max(
+    0,
+    boredomThresholdSeconds - state.inactiveSeconds
+  );
+  const knockedFlyIds = new Set(
+    swatter.knockdowns.map((knockdown) => knockdown.flyId)
+  );
 
   const scheduleSwatterTimeout = (callback: () => void, delay: number) => {
     const timeoutId = window.setTimeout(() => {
@@ -198,10 +225,11 @@ const App = () => {
     }));
   }, [state.phase]);
 
-  const triggerSwatAt = (point: ArenaPoint, targetFlyId: number | null) => {
+  const triggerSwatAt = (point: ArenaPoint, target: SwatTarget | null) => {
     nextEffectIdRef.current += 1;
     const effectId = nextEffectIdRef.current;
-    const splatRotation = -22 + (effectId % 6) * 8;
+    const effectPoint = target ?? point;
+    const effectRotation = -18 + (effectId % 5) * 9;
 
     setSwatter((current) => ({
       ...current,
@@ -210,35 +238,64 @@ const App = () => {
       isTracking: true,
       isSwinging: true,
       impact: {
-        ...point,
+        ...effectPoint,
         id: effectId,
       },
     }));
 
     scheduleSwatterTimeout(() => {
-      if (targetFlyId === null) {
+      if (target === null) {
         return;
       }
 
-      setState((current) => swatFly(current, targetFlyId));
       setSwatter((current) => ({
         ...current,
-        splats: [
-          ...current.splats.slice(-7),
+        knockdowns: [
+          ...current.knockdowns.slice(-5),
           {
-            ...point,
+            ...target,
+            drift: effectId % 2 === 0 ? -18 : 18,
+            flyId: target.flyId,
             id: effectId,
-            rotation: splatRotation,
+            rotation: effectRotation,
           },
         ],
       }));
 
       scheduleSwatterTimeout(() => {
+        setState((current) => swatFly(current, target.flyId));
         setSwatter((current) => ({
           ...current,
-          splats: current.splats.filter((splat) => splat.id !== effectId),
+          knockdowns: current.knockdowns.filter(
+            (knockdown) => knockdown.id !== effectId
+          ),
+          splats: [
+            ...current.splats.slice(-7),
+            {
+              ...target,
+              id: effectId,
+              rotation: effectRotation,
+              y: Math.min(94, target.y + 22),
+            },
+          ],
         }));
-      }, splatLifetimeMs);
+
+        scheduleSwatterTimeout(() => {
+          setSwatter((current) => ({
+            ...current,
+            splats: current.splats.filter((splat) => splat.id !== effectId),
+          }));
+        }, splatLifetimeMs);
+      }, knockdownLifetimeMs);
+
+      scheduleSwatterTimeout(() => {
+        setSwatter((current) => ({
+          ...current,
+          knockdowns: current.knockdowns.filter(
+            (knockdown) => knockdown.id !== effectId
+          ),
+        }));
+      }, knockdownLifetimeMs + splatLifetimeMs);
     }, swatImpactDelayMs);
 
     scheduleSwatterTimeout(() => {
@@ -269,7 +326,7 @@ const App = () => {
     setSwatter((current) => ({
       ...current,
       ...point,
-      rotation: Math.max(-14, Math.min(12, -7 + horizontalMotion * 1.15)),
+      rotation: Math.max(-5, Math.min(5, horizontalMotion * 0.45)),
       isTracking: true,
     }));
   };
@@ -286,133 +343,82 @@ const App = () => {
 
     const rect = event.currentTarget.getBoundingClientRect();
     const point = getArenaPoint(rect, event.clientX, event.clientY);
-    const targetFlyId = selectFlyInSwatReach(state.currentGame.flies, point, {
+    const availableFlies = state.currentGame.flies.filter(
+      (fly) => !knockedFlyIds.has(fly.id)
+    );
+    const targetFlyId = selectFlyInSwatReach(availableFlies, point, {
       width: rect.width,
       height: rect.height,
     });
+    const targetFly =
+      availableFlies.find((fly) => fly.id === targetFlyId) ?? null;
 
-    triggerSwatAt(point, targetFlyId);
+    triggerSwatAt(
+      point,
+      targetFly
+        ? {
+            flyId: targetFly.id,
+            x: targetFly.x,
+            y: targetFly.y,
+          }
+        : null
+    );
   };
 
-  const handleKeyboardSwat = (flyId: number, point: ArenaPoint) => {
-    triggerSwatAt(point, flyId);
+  const handleKeyboardSwat = (target: SwatTarget) => {
+    triggerSwatAt(target, target);
   };
 
   return (
-    <div className="shell">
-      <div className="ambient ambient-left" />
-      <div className="ambient ambient-right" />
+    <div className="shell simple-shell">
+      <main className="game-board">
+        <header className="game-topbar">
+          <div className="brand-lockup" aria-label="Boring Meeting Flyswatter">
+            <span className="brand-mark">BMF</span>
+            <span className="game-status">
+              {state.phase === 'idle'
+                ? 'READY'
+                : state.phase === 'monitoring'
+                  ? 'WAIT'
+                  : 'SWAT'}
+            </span>
+          </div>
 
-      <main className="board">
-        <section className="hero panel">
-          <div className="eyebrow">Meeting Boredom Meter / Hackathon Demo</div>
-          <p className="hero-kicker">会議の退屈さを、行動に変える。</p>
-          <h1>ハエが出る会議は、何かが足りないです。</h1>
-          <p className="hero-copy">
-            会議の空白時間を退屈の兆候として捉え、しきい値に達した瞬間だけ
-            ミニゲームが立ち上がります。ふざけて見えるのに、会議のテンポや密度を
-            見直すきっかけになる。その境界を狙った、会議 UX の実験機です。
-          </p>
-
-          <div className="hero-actions" data-no-activity-capture="true">
+          <div className="top-actions" data-no-activity-capture="true">
             <button
               className="action action-primary"
               onClick={() => setState(startMeeting())}
               type="button"
             >
-              {state.phase === 'idle' ? '会議を開始' : 'もう一度デモする'}
+              START
             </button>
             <button
               className="action"
               onClick={() => setState(createInitialMeetingState())}
               type="button"
             >
-              リセット
+              RESET
             </button>
           </div>
-        </section>
+        </header>
 
-        <section className="play-grid">
-          <article className="panel live-panel">
-            <div className="panel-header">
-              <span>Live Meter</span>
-              <span>{formatClock(state.meetingSeconds)}</span>
-            </div>
-
-            <div className="meter-wrap">
-              <div className="meter-labels">
-                <span>静かな時間</span>
-                <span>{Math.round(boredomGauge)}%</span>
-              </div>
-              <div
-                aria-label="退屈度メーター"
-                aria-valuemax={100}
-                aria-valuemin={0}
-                aria-valuenow={Math.round(boredomGauge)}
-                className="meter"
-                role="progressbar"
-                tabIndex={0}
-              >
-                <div
-                  className="meter-fill"
-                  style={
-                    {
-                      '--meter-width': `${boredomGauge}%`,
-                    } as CSSProperties
-                  }
-                />
-              </div>
-            </div>
-
-            <div className="status-strip">
-              <div>
-                <span className="status-label">状態</span>
+        <section className="play-grid simple-play-grid">
+          <article className="panel arena-panel game-panel">
+            <div className="game-scorebar">
+              <div className="score-pill">
+                <span>SCORE</span>
                 <strong>
-                  {state.phase === 'idle'
-                    ? '待機中'
-                    : state.phase === 'monitoring'
-                      ? '会議を監視中'
-                      : '退屈を検知して介入中'}
+                  {gameScore}/{targetScore}
                 </strong>
               </div>
-              <div>
-                <span className="status-label">直近の反応</span>
-                <strong>{state.lastActivityLabel}</strong>
+              <div className="score-pill">
+                <span>TIME</span>
+                <strong>{gameTime}</strong>
               </div>
-              <div>
-                <span className="status-label">検知できるもの</span>
-                <strong>
-                  キー入力 / ポインター / フォーカス復帰 / タブ復帰
-                </strong>
+              <div className="score-pill">
+                <span>LIFE</span>
+                <strong>{gameLives}</strong>
               </div>
-            </div>
-
-            <div className="activity-dock" data-no-activity-capture="true">
-              {activityButtons.map((label) => (
-                <button
-                  className="activity-chip"
-                  key={label}
-                  onClick={() =>
-                    setState((current) => registerActivity(current, label))
-                  }
-                  type="button"
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </article>
-
-          <article className="panel arena-panel">
-            <div className="panel-header">
-              <span>Flyswatter Intervention</span>
-              <span>
-                {state.currentGame
-                  ? `残り ${formatClock(state.currentGame.remainingSeconds)} / 目標 ${targetScore} / 残機 ${
-                      maxPenalties - state.currentGame.penalties
-                    }`
-                  : '待機'}
-              </span>
             </div>
 
             <div
@@ -429,30 +435,19 @@ const App = () => {
             >
               {state.currentGame ? (
                 <>
-                  <div className="arena-copy">
-                    <p>{swattingFeedback?.detail}</p>
-                    <strong>{state.currentGame.score} pts</strong>
-                    <div className="arena-feedback">
-                      <span className="feedback-headline">
-                        {swattingFeedback?.headline}
-                      </span>
-                      <span>
-                        残り {formatClock(state.currentGame.remainingSeconds)}
-                      </span>
-                      <span>圧 {swattingFeedback?.pressurePercent ?? 0}%</span>
-                      <span>危険 {swattingFeedback?.dangerCount ?? 0}</span>
-                    </div>
-                    <div
-                      aria-label="反撃圧"
-                      aria-valuemax={100}
-                      aria-valuemin={0}
-                      aria-valuenow={swattingFeedback?.pressurePercent ?? 0}
-                      className="pressure-meter"
-                      role="progressbar"
-                      tabIndex={0}
-                    >
-                      <span />
-                    </div>
+                  <div className="arena-score" aria-hidden="true">
+                    {state.currentGame.score}
+                  </div>
+                  <div
+                    aria-label="反撃圧"
+                    aria-valuemax={100}
+                    aria-valuemin={0}
+                    aria-valuenow={swattingFeedback?.pressurePercent ?? 0}
+                    className="arena-pressure"
+                    role="progressbar"
+                    tabIndex={0}
+                  >
+                    <span />
                   </div>
 
                   <div
@@ -475,45 +470,68 @@ const App = () => {
                     onPointerMove={handleSwatterPointerMove}
                     ref={flyZoneRef}
                   >
-                    {state.currentGame.flies.map((fly) => (
-                      <button
-                        aria-label="ハエを叩く"
-                        className={`fly-target ${
-                          fly.charge / counterThresholdTicks >= 0.72
-                            ? 'is-danger'
-                            : ''
-                        }`}
-                        key={fly.id}
-                        onClick={(event) => {
-                          if (event.detail === 0) {
-                            handleKeyboardSwat(fly.id, {
+                    {state.currentGame.flies
+                      .filter((fly) => !knockedFlyIds.has(fly.id))
+                      .map((fly) => (
+                        <button
+                          aria-label="ハエを叩く"
+                          className={`fly-target ${
+                            fly.charge / counterThresholdTicks >= 0.72
+                              ? 'is-danger'
+                              : ''
+                          }`}
+                          key={fly.id}
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleKeyboardSwat({
+                              flyId: fly.id,
                               x: fly.x,
                               y: fly.y,
                             });
+                          }}
+                          onPointerDown={(event) => event.stopPropagation()}
+                          style={
+                            {
+                              '--fly-x': `${fly.x}%`,
+                              '--fly-y': `${fly.y}%`,
+                              '--fly-size': `${fly.size}px`,
+                              '--fly-rotate': `${fly.rotation}deg`,
+                              '--fly-hue': `${fly.hue}deg`,
+                              '--fly-threat': `${
+                                fly.charge / counterThresholdTicks
+                              }`,
+                              '--fly-scale': `${
+                                1 + (fly.charge / counterThresholdTicks) * 0.18
+                              }`,
+                            } as CSSProperties
                           }
-                        }}
+                          type="button"
+                        >
+                          <span className="fly-wing fly-wing-left" />
+                          <span className="fly-wing fly-wing-right" />
+                          <span className="fly-body" />
+                          <span className="fly-head" />
+                        </button>
+                      ))}
+                    {swatter.knockdowns.map((knockdown) => (
+                      <span
+                        aria-hidden="true"
+                        className="fly-knockdown"
+                        key={knockdown.id}
                         style={
                           {
-                            '--fly-x': `${fly.x}%`,
-                            '--fly-y': `${fly.y}%`,
-                            '--fly-size': `${fly.size}px`,
-                            '--fly-rotate': `${fly.rotation}deg`,
-                            '--fly-hue': `${fly.hue}deg`,
-                            '--fly-threat': `${
-                              fly.charge / counterThresholdTicks
-                            }`,
-                            '--fly-scale': `${
-                              1 + (fly.charge / counterThresholdTicks) * 0.18
-                            }`,
+                            '--knock-drift': `${knockdown.drift}px`,
+                            '--knock-rotate': `${knockdown.rotation}deg`,
+                            '--knock-x': `${knockdown.x}%`,
+                            '--knock-y': `${knockdown.y}%`,
                           } as CSSProperties
                         }
-                        type="button"
                       >
                         <span className="fly-wing fly-wing-left" />
                         <span className="fly-wing fly-wing-right" />
                         <span className="fly-body" />
                         <span className="fly-head" />
-                      </button>
+                      </span>
                     ))}
                     {swatter.splats.map((splat) => (
                       <span
@@ -546,8 +564,7 @@ const App = () => {
                       aria-hidden="true"
                       className={`fly-swatter ${
                         swatter.isTracking ? 'is-tracking' : ''
-                      } ${swatter.isSwinging ? 'is-swinging' : ''}`}
-                      key={swatter.swingKey}
+                      }`}
                       style={
                         {
                           '--swatter-x': `${swatter.x}%`,
@@ -556,65 +573,94 @@ const App = () => {
                         } as CSSProperties
                       }
                     >
-                      <span className="swatter-head" />
-                      <span className="swatter-handle" />
+                      <span
+                        className={`fly-swatter-anim ${
+                          swatter.isSwinging ? 'is-swinging' : ''
+                        }`}
+                        key={swatter.swingKey}
+                      >
+                        <span className="swatter-head" />
+                        <span className="swatter-handle" />
+                        <span className="swatter-hand" />
+                      </span>
                     </span>
                   </div>
                 </>
               ) : (
                 <div className="arena-idle">
-                  <p>今は会議に空白がありません。</p>
+                  <span>{state.phase === 'idle' ? 'READY' : 'WAIT'}</span>
                   <strong>
-                    無操作が {boredomThresholdSeconds}{' '}
-                    秒続くと、ハエが現れます。
+                    {state.phase === 'idle' ? 'START' : idleCountdown}
                   </strong>
                 </div>
               )}
             </div>
           </article>
-        </section>
 
-        <section className="metrics-grid">
-          <article className="metric-card">
-            <span>退屈イベント</span>
-            <strong>{metrics.boredomEvents}</strong>
-          </article>
-          <article className="metric-card">
-            <span>初回発生まで</span>
-            <strong>
-              {metrics.firstBoredomSecond
-                ? formatClock(metrics.firstBoredomSecond)
-                : '--:--'}
-            </strong>
-          </article>
-          <article className="metric-card">
-            <span>平均ハエ叩き数</span>
-            <strong>{metrics.averageSwatsPerEvent.toFixed(1)}</strong>
-          </article>
-          <article className="metric-card">
-            <span>退屈率</span>
-            <strong>{formatPercent(metrics.boredomRate)}</strong>
-          </article>
-        </section>
+          <aside className="panel live-panel compact-panel">
+            <div className="compact-meter">
+              <div className="compact-meter-head">
+                <span>退屈</span>
+                <strong>{Math.round(boredomGauge)}%</strong>
+              </div>
+              <div
+                aria-label="退屈度メーター"
+                aria-valuemax={100}
+                aria-valuemin={0}
+                aria-valuenow={Math.round(boredomGauge)}
+                className="meter"
+                role="progressbar"
+                tabIndex={0}
+              >
+                <div
+                  className="meter-fill"
+                  style={
+                    {
+                      '--meter-width': `${boredomGauge}%`,
+                    } as CSSProperties
+                  }
+                />
+              </div>
+            </div>
 
-        <section className="notes panel">
-          <div>
-            <div className="eyebrow">Why It Works</div>
-            <h2>退屈は感想ではなく、行動として観測できる。</h2>
-          </div>
-          <div className="note-grid">
-            <p>
-              人を評価するためではなく、会議の設計を見直すためのセンサーとして使う。
-            </p>
-            <p>
-              退屈が発生するまでの時間、発生回数、介入のされ方をまとめて読むことで、
-              会議の密度を見直せます。
-            </p>
-            <p>
-              ミニゲームに逃がすことで、ただの監視 UI
-              ではなく、少し笑える改善材料へ変換します。
-            </p>
-          </div>
+            <div className="activity-pad" data-no-activity-capture="true">
+              {activityButtons.map((label) => (
+                <button
+                  className="activity-chip"
+                  key={label}
+                  onClick={() =>
+                    setState((current) => registerActivity(current, label))
+                  }
+                  type="button"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
+            <div className="side-stats">
+              <div className="stat-tile">
+                <span>回数</span>
+                <strong>{metrics.boredomEvents}</strong>
+              </div>
+              <div className="stat-tile">
+                <span>初回</span>
+                <strong>
+                  {metrics.firstBoredomSecond
+                    ? formatClock(metrics.firstBoredomSecond)
+                    : '--:--'}
+                </strong>
+              </div>
+              <div className="stat-tile">
+                <span>平均</span>
+                <strong>{metrics.averageSwatsPerEvent.toFixed(1)}</strong>
+              </div>
+              <div className="stat-tile">
+                <span>率</span>
+                <strong>{formatPercent(metrics.boredomRate)}</strong>
+              </div>
+            </div>
+          </aside>
         </section>
       </main>
     </div>

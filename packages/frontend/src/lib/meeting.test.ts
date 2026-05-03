@@ -5,6 +5,7 @@ import {
   advanceMeeting,
   boredomThresholdSeconds,
   counterThresholdTicks,
+  createFly,
   createInitialMeetingState,
   gameDurationSeconds,
   maxPenalties,
@@ -71,6 +72,12 @@ describe('会議退屈度ロジック', () => {
     expect(state.currentGame?.flies).toHaveLength(2);
     expect(state.currentGame?.graceTicks).toBe(openingGraceTicks);
     expect(state.firstBoredomSecond).toBe(boredomThresholdSeconds);
+  });
+
+  it('生成されるハエは小さなドット絵サイズに収まるべき', () => {
+    const fly = createFly(() => 1);
+
+    expect(fly.size).toBeLessThanOrEqual(20);
   });
 
   it('開始直後の説明猶予では反撃チャージを進めないべき', () => {

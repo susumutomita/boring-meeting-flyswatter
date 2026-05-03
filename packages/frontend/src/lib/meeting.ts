@@ -81,7 +81,7 @@ export type SwatFieldSize = {
 
 let flyId = 0;
 let eventId = 0;
-const defaultSwatReachPixels = 42;
+const defaultSwatReachPixels = 54;
 const dangerChargeRatio = 0.72;
 const flyBounds = {
   minX: 8,
@@ -108,7 +108,7 @@ export const createFly = (random = Math.random): Fly => {
     id: nextFlyId(),
     x: 12 + Math.round(random() * 76),
     y: 18 + Math.round(random() * 56),
-    size: 22 + Math.round(random() * 10),
+    size: 14 + Math.round(random() * 6),
     rotation: -18 + Math.round(random() * 36),
     hue: 194 + Math.round(random() * 22),
     velocityX: Math.cos(angle) * speed,
