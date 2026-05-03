@@ -198,8 +198,10 @@ button {
 .arena-idle strong {
   color: var(--ink);
   font-family: "Impact", "Haettenschweiler", sans-serif;
-  font-size: clamp(3.5rem, 11vw, 9rem);
-  line-height: 0.9;
+  font-size: clamp(2.4rem, 6vw, 4.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-align: center;
 }
 
 .arena-score {
@@ -656,6 +658,133 @@ button {
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+}
+
+.audio-error,
+.pip-hint {
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 250, 230, 0.8);
+  font-size: 0.9rem;
+  color: var(--ink);
+}
+
+.pip-body {
+  margin: 0;
+  padding: 12px;
+  font-family: "Inter", "Helvetica Neue", "Hiragino Kaku Gothic ProN",
+    sans-serif;
+  background: #18191b;
+  color: #f1f2f4;
+}
+
+.pip-shell {
+  display: grid;
+  gap: 8px;
+}
+
+.pip-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pip-mark {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 6px;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  color: #18191b;
+  background: #f1f2f4;
+  border-radius: 4px;
+}
+
+.pip-status {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(241, 242, 244, 0.55);
+}
+
+.pip-status.is-on {
+  color: #7be0a3;
+}
+
+.pip-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.84rem;
+}
+
+.pip-row strong {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1.4rem;
+  letter-spacing: 0.02em;
+}
+
+.pip-row-tight {
+  font-size: 0.74rem;
+  color: rgba(241, 242, 244, 0.7);
+}
+
+.pip-label {
+  font-family: "VT323", "Courier New", monospace;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(241, 242, 244, 0.6);
+}
+
+.pip-mono {
+  font-family: "VT323", "Courier New", monospace;
+}
+
+.pip-meter {
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.pip-meter-fill {
+  width: var(--pip-meter-width, 0%);
+  height: 100%;
+  background: linear-gradient(90deg, #7be0a3, #f1c66c, #ec6262);
+  transition: width 220ms ease;
+}
+
+.pip-toast {
+  margin-top: 4px;
+  padding: 10px 12px;
+  border: 1px solid rgba(241, 242, 244, 0.18);
+  border-radius: 10px;
+  background: linear-gradient(135deg, #ec6262, #b94c4c);
+  color: #18191b;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 0.96rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.pip-toast small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.74rem;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.pip-toast:hover {
+  filter: brightness(1.04);
 }
 
 @keyframes fly-buzz {

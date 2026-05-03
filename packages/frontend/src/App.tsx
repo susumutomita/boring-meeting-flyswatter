@@ -1,10 +1,14 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
+import { PipMeter } from './components/PipMeter';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
+import { useDocumentPip } from './hooks/useDocumentPip';
 import { useMeetingTick } from './hooks/useMeetingTick';
 import { useSwatter } from './hooks/useSwatter';
+import { useTabAudioActivity } from './hooks/useTabAudioActivity';
 import {
   advanceMeeting,
   boredomThresholdSeconds,
@@ -31,6 +35,8 @@ const phaseStatusLabel: Record<string, string> = {
 
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audioError, setAudioError] = useState<string | null>(null);
 
   const isRunning = state.phase === 'monitoring' || state.phase === 'swatting';
   const isSwatting = state.phase === 'swatting';
@@ -50,6 +56,19 @@ const App = () => {
     enabled: isRunning,
     onActivity: (label) =>
       setState((current) => registerActivity(current, label)),
+  });
+
+  const { isCapturing, levelDb } = useTabAudioActivity({
+    enabled: audioEnabled && isRunning,
+    onSpeech: () =>
+      setState((current) => registerActivity(current, '発話を検知')),
+    onError: (error) => {
+      setAudioError(error.message);
+      setAudioEnabled(false);
+    },
+    onCaptureEnd: () => {
+      setAudioEnabled(false);
+    },
   });
 
   const {
@@ -76,6 +95,18 @@ const App = () => {
     boredomThresholdSeconds - state.inactiveSeconds
   );
 
+  const pipEnabled = isRunning;
+  const { pipWindow, isSupported: pipSupported } = useDocumentPip({
+    enabled: pipEnabled,
+  });
+
+  useEffect(() => {
+    if (!audioEnabled) {
+      return;
+    }
+    setAudioError(null);
+  }, [audioEnabled]);
+
   const primaryButton = isIdle
     ? {
         label: 'ミーティング開始',
@@ -94,6 +125,25 @@ const App = () => {
           primary: false,
         };
 
+  const audioToggleLabel = audioEnabled
+    ? '音声共有を停止'
+    : 'ミーティング音声を共有';
+
+  const handleToastClick = () => {
+    window.focus();
+  };
+
+  const pipNode =
+    pipWindow && isRunning ? (
+      <PipMeter
+        boredomGauge={boredomGauge}
+        isCapturing={isCapturing}
+        speechLevelDb={levelDb}
+        showToast={isSwatting}
+        onToastClick={handleToastClick}
+      />
+    ) : null;
+
   return (
     <div className="shell simple-shell">
       <main className="game-board">
@@ -106,6 +156,15 @@ const App = () => {
           </div>
 
           <div className="top-actions" data-no-activity-capture="true">
+            {isRunning ? (
+              <button
+                className={`action ${audioEnabled ? 'action-primary' : ''}`}
+                onClick={() => setAudioEnabled((current) => !current)}
+                type="button"
+              >
+                {audioToggleLabel}
+              </button>
+            ) : null}
             <button
               className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
               onClick={primaryButton.onClick}
@@ -115,6 +174,16 @@ const App = () => {
             </button>
           </div>
         </header>
+
+        {audioError ? (
+          <output className="audio-error">{audioError}</output>
+        ) : null}
+
+        {!pipSupported && isRunning ? (
+          <output className="pip-hint">
+            このブラウザは PiP 非対応です。会議画面と並べてご利用ください。
+          </output>
+        ) : null}
 
         <section className="play-grid simple-play-grid">
           {isCompleted ? (
@@ -128,8 +197,20 @@ const App = () => {
               feedback={swattingFeedback}
               swatter={swatter}
               knockedFlyIds={knockedFlyIds}
-              idleLabel={isIdle ? 'READY' : '監視中'}
-              idleValue={isIdle ? 'START' : idleCountdown}
+              idleLabel={
+                isIdle
+                  ? '右上のボタンから'
+                  : state.boredomGameTriggered
+                    ? '退屈ポイント検知済み'
+                    : '退屈到達まで'
+              }
+              idleValue={
+                isIdle
+                  ? 'ミーティング開始'
+                  : state.boredomGameTriggered
+                    ? '終了で振り返り'
+                    : `${idleCountdown}s`
+              }
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
               onPointerEnter={handlePointerEnter}
@@ -138,16 +219,22 @@ const App = () => {
             />
           )}
 
-          <MeetingHud
-            boredomGauge={boredomGauge}
-            metrics={metrics}
-            activityLabels={activityLabels}
-            onActivity={(label) =>
-              setState((current) => registerActivity(current, label))
-            }
-          />
+          {isCompleted ? null : (
+            <MeetingHud
+              boredomGauge={boredomGauge}
+              metrics={metrics}
+              activityLabels={activityLabels}
+              onActivity={(label) =>
+                setState((current) => registerActivity(current, label))
+              }
+            />
+          )}
         </section>
       </main>
+
+      {pipWindow && pipNode
+        ? createPortal(pipNode, pipWindow.document.body)
+        : null}
     </div>
   );
 };
