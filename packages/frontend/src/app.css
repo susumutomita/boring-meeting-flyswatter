@@ -694,6 +694,43 @@ button {
   background: rgba(24, 25, 27, 0.06);
 }
 
+.meeting-summary-quote {
+  position: relative;
+  margin: 0;
+  padding: 18px 22px 18px 32px;
+  border-left: 4px solid var(--ink);
+  background: rgba(24, 25, 27, 0.04);
+  border-radius: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.meeting-summary-quote::before {
+  content: "“";
+  position: absolute;
+  top: -4px;
+  left: 8px;
+  font-family: "Georgia", "Hiragino Mincho ProN", serif;
+  font-size: 2.4rem;
+  line-height: 1;
+  color: rgba(24, 25, 27, 0.45);
+}
+
+.meeting-summary-quote p {
+  margin: 0;
+  font-family: "Georgia", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: 1.04rem;
+  line-height: 1.6;
+}
+
+.meeting-summary-quote cite {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.86rem;
+  letter-spacing: 0.06em;
+  color: rgba(24, 25, 27, 0.62);
+  font-style: normal;
+}
+
 .meeting-summary-actions {
   display: flex;
   gap: 12px;

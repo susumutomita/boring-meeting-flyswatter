@@ -5,6 +5,7 @@ import {
   selectMeetingMetrics,
   targetScore,
 } from '../lib/meeting';
+import { selectQuote } from '../lib/quotes';
 
 type MeetingSummaryProps = {
   state: MeetingState;
@@ -70,6 +71,13 @@ export const MeetingSummary = ({ state, onRestart }: MeetingSummaryProps) => {
           </ul>
         </section>
       ) : null}
+
+      <blockquote className="meeting-summary-quote">
+        <p>{selectQuote(totalDuration + state.totalInactiveSeconds).body}</p>
+        <cite>
+          — {selectQuote(totalDuration + state.totalInactiveSeconds).author}
+        </cite>
+      </blockquote>
 
       <div className="meeting-summary-actions">
         <button
