@@ -5,6 +5,9 @@ export const counterThresholdTicks = 36;
 export const targetScore = 10;
 export const maxPenalties = 5;
 export const openingGraceTicks = 28;
+export const treatSpawnTicks = 33;
+export const treatBoostTicks = 55;
+export const treatBoostMultiplier = 2;
 
 export const boredomReasonPresets = [
   '議題が逸れた',
@@ -40,6 +43,16 @@ export type CompletedBoredomEvent = {
   durationSeconds: number;
 };
 
+export type Treat = {
+  id: number;
+  x: number;
+  y: number;
+  velocityX: number;
+  velocityY: number;
+  bobSeed: number;
+  age: number;
+};
+
 export type ActiveGameSeed = {
   eventId: number;
   durationSeconds: number;
@@ -48,6 +61,9 @@ export type ActiveGameSeed = {
   penalties: number;
   graceTicks: number;
   flies: Fly[];
+  treat: Treat | null;
+  treatSpawnTicksRemaining: number;
+  multiplierTicksRemaining: number;
 };
 
 export type ActiveGame = ActiveGameSeed & {
@@ -96,6 +112,7 @@ export type SwatFieldSize = {
 
 let flyId = 0;
 let eventId = 0;
+let treatId = 0;
 const defaultSwatReachPixels = 72;
 const dangerChargeRatio = 0.72;
 const flyBounds = {
@@ -103,6 +120,12 @@ const flyBounds = {
   maxX: 92,
   minY: 16,
   maxY: 80,
+};
+const treatBounds = {
+  minX: 14,
+  maxX: 86,
+  minY: 22,
+  maxY: 70,
 };
 
 const nextFlyId = () => {
@@ -113,6 +136,11 @@ const nextFlyId = () => {
 const nextEventId = () => {
   eventId += 1;
   return eventId;
+};
+
+const nextTreatId = () => {
+  treatId += 1;
+  return treatId;
 };
 
 export const createFly = (random = Math.random): Fly => {
@@ -135,6 +163,21 @@ export const createFly = (random = Math.random): Fly => {
 export const createFlyField = (count = flyCount, random = Math.random): Fly[] =>
   Array.from({ length: count }, () => createFly(random));
 
+export const createTreat = (random = Math.random): Treat => {
+  const angle = random() * Math.PI * 2;
+  const speed = 0.22 + random() * 0.28;
+
+  return {
+    id: nextTreatId(),
+    x: 28 + Math.round(random() * 44),
+    y: 32 + Math.round(random() * 28),
+    velocityX: Math.cos(angle) * speed,
+    velocityY: Math.sin(angle) * speed,
+    bobSeed: random() * Math.PI * 2,
+    age: 0,
+  };
+};
+
 export const createGameSeed = (): ActiveGameSeed => ({
   eventId: nextEventId(),
   durationSeconds: gameDurationSeconds,
@@ -143,6 +186,9 @@ export const createGameSeed = (): ActiveGameSeed => ({
   penalties: 0,
   graceTicks: openingGraceTicks,
   flies: createFlyField(),
+  treat: null,
+  treatSpawnTicksRemaining: treatSpawnTicks,
+  multiplierTicksRemaining: 0,
 });
 
 export const createInitialMeetingState = (): MeetingState => ({
@@ -330,9 +376,11 @@ export const swatFly = (
 
   const flies = [...state.currentGame.flies];
   flies[flyIndex] = createReplacementFly();
+  const points =
+    state.currentGame.multiplierTicksRemaining > 0 ? treatBoostMultiplier : 1;
   const currentGame = {
     ...state.currentGame,
-    score: state.currentGame.score + 1,
+    score: state.currentGame.score + points,
     flies,
   };
 
@@ -343,7 +391,23 @@ export const swatFly = (
   return {
     ...state,
     currentGame,
-    lastActivityLabel: 'ハエを叩いた',
+    lastActivityLabel: points > 1 ? `ハエを叩いた x${points}` : 'ハエを叩いた',
+  };
+};
+
+export const swatTreat = (state: MeetingState): MeetingState => {
+  if (!state.currentGame || !state.currentGame.treat) {
+    return state;
+  }
+
+  return {
+    ...state,
+    currentGame: {
+      ...state.currentGame,
+      treat: null,
+      multiplierTicksRemaining: treatBoostTicks,
+    },
+    lastActivityLabel: 'フラペチーノで 2 倍ブースト',
   };
 };
 
@@ -451,11 +515,52 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     );
   }
 
+  const nextSpawnRemaining = Math.max(
+    0,
+    state.currentGame.treatSpawnTicksRemaining - 1
+  );
+  const shouldSpawnTreat =
+    state.currentGame.treat === null && nextSpawnRemaining === 0;
+  let nextTreat: Treat | null = state.currentGame.treat;
+
+  if (shouldSpawnTreat) {
+    nextTreat = createTreat();
+  } else if (nextTreat) {
+    let treatX = nextTreat.x + nextTreat.velocityX;
+    let treatY = nextTreat.y + nextTreat.velocityY;
+    let treatVx = nextTreat.velocityX;
+    let treatVy = nextTreat.velocityY;
+    if (treatX <= treatBounds.minX || treatX >= treatBounds.maxX) {
+      treatVx *= -1;
+      treatX = Math.min(treatBounds.maxX, Math.max(treatBounds.minX, treatX));
+    }
+    if (treatY <= treatBounds.minY || treatY >= treatBounds.maxY) {
+      treatVy *= -1;
+      treatY = Math.min(treatBounds.maxY, Math.max(treatBounds.minY, treatY));
+    }
+    nextTreat = {
+      ...nextTreat,
+      x: treatX,
+      y: treatY,
+      velocityX: treatVx,
+      velocityY: treatVy,
+      age: nextTreat.age + 1,
+    };
+  }
+
+  const nextMultiplierTicks = Math.max(
+    0,
+    state.currentGame.multiplierTicksRemaining - 1
+  );
+
   const currentGame = {
     ...state.currentGame,
     flies: activeFlies,
     penalties,
     graceTicks,
+    treat: nextTreat,
+    treatSpawnTicksRemaining: nextSpawnRemaining,
+    multiplierTicksRemaining: nextMultiplierTicks,
   };
 
   if (currentGame.penalties >= maxPenalties) {
@@ -469,7 +574,9 @@ export const moveFlies = (state: MeetingState): MeetingState => {
       ? 'ハエ叩きの説明中'
       : triggeredCounter
         ? 'ハエが反撃した'
-        : state.lastActivityLabel,
+        : shouldSpawnTreat
+          ? 'フラペチーノが現れた'
+          : state.lastActivityLabel,
   };
 };
 
