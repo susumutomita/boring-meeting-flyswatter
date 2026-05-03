@@ -20,6 +20,7 @@ const buildSnapshot = (
   phase: 'monitoring',
   updatedAt: 0,
   reasons: [],
+  swattingStartedAt: null,
   ...overrides,
 });
 

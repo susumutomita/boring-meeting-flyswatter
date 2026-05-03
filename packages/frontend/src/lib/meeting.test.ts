@@ -319,6 +319,19 @@ describe('会議退屈度ロジック', () => {
     expect(state.completedEvents).toHaveLength(1);
   });
 
+  it('退屈閾値到達時に絶対時刻 ( swattingStartedAt ) を記録するべき', () => {
+    let state = startMeeting();
+    expect(state.swattingStartedAt).toBeNull();
+
+    for (let index = 0; index < boredomThresholdSeconds; index += 1) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+
+    expect(state.phase).toBe('swatting');
+    expect(state.swattingStartedAt).not.toBeNull();
+    expect(typeof state.swattingStartedAt).toBe('number');
+  });
+
   it('スポーンタイマーが切れたタイミングでフラペチーノが現れるべき', () => {
     const state = {
       ...startMeeting(),

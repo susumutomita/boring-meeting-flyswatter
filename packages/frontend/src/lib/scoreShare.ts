@@ -8,6 +8,7 @@ export type ScoreSnapshot = {
   phase: 'idle' | 'monitoring' | 'swatting' | 'completed';
   updatedAt: number;
   reasons: BoredomReasonPreset[];
+  swattingStartedAt: number | null;
 };
 
 export type ReasonTally = {
