@@ -59,19 +59,37 @@ export const ScoreLeaderboard = ({
                 className={`score-board-row ${isSelf ? 'is-self' : ''}`}
                 key={snapshot.peerId}
               >
-                <span className="score-board-rank">{index + 1}</span>
-                <span className="score-board-name">
-                  {snapshot.displayName}
-                  {isSelf ? <small>あなた</small> : null}
-                </span>
-                <span className="score-board-phase">
-                  {phaseDot[snapshot.phase]}
-                </span>
-                <span className="score-board-best">
-                  {snapshot.bestScore}
-                  <small>BEST</small>
-                </span>
-                <span className="score-board-current">{snapshot.score}</span>
+                <div className="score-board-row-head">
+                  <span className="score-board-rank">{index + 1}</span>
+                  <span className="score-board-name">
+                    {snapshot.displayName}
+                    {isSelf ? <small>あなた</small> : null}
+                  </span>
+                  <span className="score-board-phase">
+                    {phaseDot[snapshot.phase]}
+                  </span>
+                </div>
+
+                <div className="score-board-row-score">
+                  <span className="score-board-best">
+                    <small>BEST</small>
+                    {snapshot.bestScore}
+                  </span>
+                  <span className="score-board-current">
+                    <small>NOW</small>
+                    {snapshot.score}
+                  </span>
+                </div>
+
+                {snapshot.reasons.length > 0 ? (
+                  <ul className="score-board-reasons">
+                    {snapshot.reasons.map((preset) => (
+                      <li className="score-board-reason" key={preset}>
+                        {preset}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
               </li>
             );
           })

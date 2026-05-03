@@ -7,6 +7,7 @@ import {
   removePeerScore,
   sanitizeDisplayName,
   sanitizeRoomCode,
+  tallyReasons,
 } from './scoreShare';
 
 const buildSnapshot = (
@@ -18,6 +19,7 @@ const buildSnapshot = (
   bestScore: 0,
   phase: 'monitoring',
   updatedAt: 0,
+  reasons: [],
   ...overrides,
 });
 
@@ -68,5 +70,20 @@ describe('スコア共有のルーム / ピア処理', () => {
     ]);
 
     expect(ranked.map((snapshot) => snapshot.peerId)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('退屈の理由は人数の多い順に集計され同数なら名前順で揃うべき', () => {
+    const tally = tallyReasons([
+      buildSnapshot({ peerId: 'a', reasons: ['議題が逸れた', '一方通行'] }),
+      buildSnapshot({ peerId: 'b', reasons: ['議題が逸れた', 'テンポが遅い'] }),
+      buildSnapshot({ peerId: 'c', reasons: ['議題が逸れた'] }),
+      buildSnapshot({ peerId: 'd', reasons: [] }),
+    ]);
+
+    expect(tally).toEqual([
+      { preset: '議題が逸れた', count: 3 },
+      { preset: 'テンポが遅い', count: 1 },
+      { preset: '一方通行', count: 1 },
+    ]);
   });
 });

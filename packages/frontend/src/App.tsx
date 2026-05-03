@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
 import { PipMeter } from './components/PipMeter';
+import { ReasonAggregate } from './components/ReasonAggregate';
 import { ReasonPicker } from './components/ReasonPicker';
 import { RoomConnect } from './components/RoomConnect';
 import { ScoreLeaderboard } from './components/ScoreLeaderboard';
@@ -169,6 +170,7 @@ const App = () => {
       bestScore,
       phase: state.phase,
       updatedAt: Date.now(),
+      reasons: state.boredomReasons,
     }),
     [
       selfPeerId,
@@ -176,6 +178,7 @@ const App = () => {
       state.currentGame?.score,
       state.phase,
       bestScore,
+      state.boredomReasons,
     ]
   );
 
@@ -345,13 +348,16 @@ const App = () => {
               />
 
               {isShareJoined ? (
-                <ScoreLeaderboard
-                  peers={sharedPeers}
-                  selfPeerId={selfPeerId}
-                  status={shareStatus}
-                  roomCode={sanitizedRoomCode}
-                  participantCount={participantCount}
-                />
+                <>
+                  <ScoreLeaderboard
+                    peers={sharedPeers}
+                    selfPeerId={selfPeerId}
+                    status={shareStatus}
+                    roomCode={sanitizedRoomCode}
+                    participantCount={participantCount}
+                  />
+                  <ReasonAggregate peers={sharedPeers} />
+                </>
               ) : null}
             </MeetingHud>
           )}
