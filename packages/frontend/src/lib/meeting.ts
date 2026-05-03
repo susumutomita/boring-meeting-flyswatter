@@ -113,7 +113,7 @@ export type SwatFieldSize = {
 let flyId = 0;
 let eventId = 0;
 let treatId = 0;
-const defaultSwatReachPixels = 72;
+const defaultSwatReachPixels = 96;
 const dangerChargeRatio = 0.72;
 const flyBounds = {
   minX: 8,

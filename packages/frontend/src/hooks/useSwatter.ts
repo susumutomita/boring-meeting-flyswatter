@@ -249,8 +249,15 @@ export const useSwatter = ({
 
     const rect = event.currentTarget.getBoundingClientRect();
     const point = getArenaPoint(rect, event.clientX, event.clientY);
+    // Visually the swatter head sits roughly 7% of arena height above the
+    // cursor (the cursor anchors near the bottom of the swatter), so search
+    // for hit-targets at the head position rather than at the raw cursor.
+    const swatHeadPoint: ArenaPoint = {
+      x: point.x,
+      y: clampPercent(point.y - 7),
+    };
     const availableFlies = flies.filter((fly) => !knockedFlyIds.has(fly.id));
-    const targetFlyId = selectFlyInSwatReach(availableFlies, point, {
+    const targetFlyId = selectFlyInSwatReach(availableFlies, swatHeadPoint, {
       width: rect.width,
       height: rect.height,
     });

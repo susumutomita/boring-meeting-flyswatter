@@ -21,7 +21,8 @@ type SwatterArenaProps = {
   onPointerEnter: () => void;
   onPointerLeave: () => void;
   onTargetClick: (target: SwatTarget) => void;
-  onTreatClick: () => void;
+  onTreatClick: (point: { x: number; y: number }) => void;
+  treatBoostPopup: { id: number; x: number; y: number } | null;
 };
 
 export const SwatterArena = ({
@@ -37,6 +38,7 @@ export const SwatterArena = ({
   onPointerLeave,
   onTargetClick,
   onTreatClick,
+  treatBoostPopup,
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
@@ -188,7 +190,7 @@ export const SwatterArena = ({
                   key={treat.id}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onTreatClick();
+                    onTreatClick({ x: treat.x, y: treat.y });
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
                   style={
@@ -207,6 +209,31 @@ export const SwatterArena = ({
                     ◕‿◕
                   </span>
                 </button>
+              ) : null}
+              {treatBoostPopup ? (
+                <div
+                  aria-hidden="true"
+                  className="treat-boost-popup"
+                  key={treatBoostPopup.id}
+                  style={
+                    {
+                      '--popup-x': `${treatBoostPopup.x}%`,
+                      '--popup-y': `${treatBoostPopup.y}%`,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="treat-boost-popup-headline">×2!</span>
+                  <span className="treat-boost-popup-sub">BOOST 発動</span>
+                  <span className="treat-boost-popup-sparkle treat-boost-popup-sparkle-a">
+                    ✦
+                  </span>
+                  <span className="treat-boost-popup-sparkle treat-boost-popup-sparkle-b">
+                    ✦
+                  </span>
+                  <span className="treat-boost-popup-sparkle treat-boost-popup-sparkle-c">
+                    ✦
+                  </span>
+                </div>
               ) : null}
               {swatter.impact ? (
                 <span

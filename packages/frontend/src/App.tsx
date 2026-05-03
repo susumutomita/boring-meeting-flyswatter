@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MeetingHud } from './components/MeetingHud';
 import { MeetingSummary } from './components/MeetingSummary';
@@ -93,6 +93,12 @@ const App = () => {
   );
   const [isShareJoined, setIsShareJoined] = useState(false);
   const [bestScore, setBestScore] = useState(0);
+  const [treatBoostPopup, setTreatBoostPopup] = useState<{
+    id: number;
+    x: number;
+    y: number;
+  } | null>(null);
+  const treatPopupIdRef = useRef(0);
   const selfPeerId = useMemo(ensureSelfPeerId, []);
 
   const sanitizedRoomCode = sanitizeRoomCode(roomCodeInput);
@@ -357,7 +363,18 @@ const App = () => {
               onPointerEnter={handlePointerEnter}
               onPointerLeave={handlePointerLeave}
               onTargetClick={handleKeyboardSwat}
-              onTreatClick={() => setState((current) => swatTreat(current))}
+              onTreatClick={(point) => {
+                treatPopupIdRef.current += 1;
+                const popupId = treatPopupIdRef.current;
+                setTreatBoostPopup({ id: popupId, x: point.x, y: point.y });
+                setState((current) => swatTreat(current));
+                window.setTimeout(() => {
+                  setTreatBoostPopup((current) =>
+                    current && current.id === popupId ? null : current
+                  );
+                }, 1100);
+              }}
+              treatBoostPopup={treatBoostPopup}
             />
           )}
 
