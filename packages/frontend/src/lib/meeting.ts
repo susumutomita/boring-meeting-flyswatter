@@ -6,7 +6,7 @@ export const targetScore = 10;
 export const maxPenalties = 5;
 export const openingGraceTicks = 28;
 
-export type MeetingPhase = 'idle' | 'monitoring' | 'swatting';
+export type MeetingPhase = 'idle' | 'monitoring' | 'swatting' | 'completed';
 
 export type Fly = {
   id: number;
@@ -51,6 +51,8 @@ export type MeetingState = {
   currentGame: ActiveGame | null;
   firstBoredomSecond: number | null;
   lastActivityLabel: string;
+  boredomGameTriggered: boolean;
+  endedAtSecond: number | null;
 };
 
 export type MeetingMetrics = {
@@ -81,7 +83,7 @@ export type SwatFieldSize = {
 
 let flyId = 0;
 let eventId = 0;
-const defaultSwatReachPixels = 54;
+const defaultSwatReachPixels = 72;
 const dangerChargeRatio = 0.72;
 const flyBounds = {
   minX: 8,
@@ -139,6 +141,8 @@ export const createInitialMeetingState = (): MeetingState => ({
   currentGame: null,
   firstBoredomSecond: null,
   lastActivityLabel: '待機中',
+  boredomGameTriggered: false,
+  endedAtSecond: null,
 });
 
 export const startMeeting = (): MeetingState => ({
@@ -146,6 +150,21 @@ export const startMeeting = (): MeetingState => ({
   phase: 'monitoring',
   lastActivityLabel: '会議を開始',
 });
+
+export const endMeeting = (state: MeetingState): MeetingState => {
+  if (state.phase === 'idle' || state.phase === 'completed') {
+    return state;
+  }
+
+  return {
+    ...state,
+    phase: 'completed',
+    currentGame: null,
+    inactiveSeconds: 0,
+    endedAtSecond: state.meetingSeconds,
+    lastActivityLabel: 'ミーティングを終了',
+  };
+};
 
 const settleCurrentGame = (
   state: MeetingState,
@@ -188,7 +207,7 @@ export const advanceMeeting = (
   state: MeetingState,
   createGame = createGameSeed
 ): MeetingState => {
-  if (state.phase === 'idle') {
+  if (state.phase === 'idle' || state.phase === 'completed') {
     return state;
   }
 
@@ -227,7 +246,10 @@ export const advanceMeeting = (
   const nextInactiveSeconds = state.inactiveSeconds + 1;
   const totalInactiveSeconds = state.totalInactiveSeconds + 1;
 
-  if (nextInactiveSeconds >= boredomThresholdSeconds) {
+  if (
+    nextInactiveSeconds >= boredomThresholdSeconds &&
+    !state.boredomGameTriggered
+  ) {
     const game = createGame();
     const atSecond = nextMeetingSeconds;
 
@@ -243,6 +265,7 @@ export const advanceMeeting = (
       },
       firstBoredomSecond: state.firstBoredomSecond ?? atSecond,
       lastActivityLabel: '退屈を検知',
+      boredomGameTriggered: true,
     };
   }
 

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MeetingHud } from './components/MeetingHud';
+import { MeetingSummary } from './components/MeetingSummary';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
 import { useMeetingTick } from './hooks/useMeetingTick';
@@ -9,6 +10,7 @@ import {
   boredomThresholdSeconds,
   createGameSeed,
   createInitialMeetingState,
+  endMeeting,
   getBoredomGauge,
   moveFlies,
   registerActivity,
@@ -20,11 +22,20 @@ import {
 
 const activityLabels = ['発言', 'メモ', '議題'] as const;
 
+const phaseStatusLabel: Record<string, string> = {
+  idle: '待機',
+  monitoring: '監視中',
+  swatting: '介入中',
+  completed: '終了',
+};
+
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
 
-  const isRunning = state.phase !== 'idle';
+  const isRunning = state.phase === 'monitoring' || state.phase === 'swatting';
   const isSwatting = state.phase === 'swatting';
+  const isCompleted = state.phase === 'completed';
+  const isIdle = state.phase === 'idle';
   const flies = state.currentGame?.flies ?? [];
 
   useMeetingTick({
@@ -65,6 +76,24 @@ const App = () => {
     boredomThresholdSeconds - state.inactiveSeconds
   );
 
+  const primaryButton = isIdle
+    ? {
+        label: 'ミーティング開始',
+        onClick: () => setState(startMeeting()),
+        primary: true,
+      }
+    : isCompleted
+      ? {
+          label: 'もう一度',
+          onClick: () => setState(createInitialMeetingState()),
+          primary: true,
+        }
+      : {
+          label: 'ミーティング終了',
+          onClick: () => setState((current) => endMeeting(current)),
+          primary: false,
+        };
+
   return (
     <div className="shell simple-shell">
       <main className="game-board">
@@ -72,46 +101,42 @@ const App = () => {
           <div className="brand-lockup" aria-label="Boring Meeting Flyswatter">
             <span className="brand-mark">BMF</span>
             <span className="game-status">
-              {state.phase === 'idle'
-                ? 'READY'
-                : state.phase === 'monitoring'
-                  ? 'WAIT'
-                  : 'SWAT'}
+              {phaseStatusLabel[state.phase] ?? '待機'}
             </span>
           </div>
 
           <div className="top-actions" data-no-activity-capture="true">
             <button
-              className="action action-primary"
-              onClick={() => setState(startMeeting())}
+              className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
+              onClick={primaryButton.onClick}
               type="button"
             >
-              START
-            </button>
-            <button
-              className="action"
-              onClick={() => setState(createInitialMeetingState())}
-              type="button"
-            >
-              RESET
+              {primaryButton.label}
             </button>
           </div>
         </header>
 
         <section className="play-grid simple-play-grid">
-          <SwatterArena
-            game={state.currentGame}
-            feedback={swattingFeedback}
-            swatter={swatter}
-            knockedFlyIds={knockedFlyIds}
-            idleLabel={state.phase === 'idle' ? 'READY' : 'WAIT'}
-            idleValue={state.phase === 'idle' ? 'START' : idleCountdown}
-            onPointerDown={handlePointerDown}
-            onPointerMove={handlePointerMove}
-            onPointerEnter={handlePointerEnter}
-            onPointerLeave={handlePointerLeave}
-            onTargetClick={handleKeyboardSwat}
-          />
+          {isCompleted ? (
+            <MeetingSummary
+              state={state}
+              onRestart={() => setState(createInitialMeetingState())}
+            />
+          ) : (
+            <SwatterArena
+              game={state.currentGame}
+              feedback={swattingFeedback}
+              swatter={swatter}
+              knockedFlyIds={knockedFlyIds}
+              idleLabel={isIdle ? 'READY' : '監視中'}
+              idleValue={isIdle ? 'START' : idleCountdown}
+              onPointerDown={handlePointerDown}
+              onPointerMove={handlePointerMove}
+              onPointerEnter={handlePointerEnter}
+              onPointerLeave={handlePointerLeave}
+              onTargetClick={handleKeyboardSwat}
+            />
+          )}
 
           <MeetingHud
             boredomGauge={boredomGauge}
