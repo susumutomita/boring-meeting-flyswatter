@@ -7,6 +7,7 @@ import {
   counterThresholdTicks,
   createFly,
   createInitialMeetingState,
+  endMeeting,
   gameDurationSeconds,
   maxPenalties,
   moveFlies,
@@ -286,6 +287,56 @@ describe('会議退屈度ロジック', () => {
 
     expect(nextState.phase).toBe('swatting');
     expect(nextState.currentGame?.penalties).toBe(maxPenalties - 1);
+  });
+
+  it('ハエ叩きは 1 ミーティング 1 回しか発火しないべき', () => {
+    let state = startMeeting();
+
+    for (let index = 0; index < boredomThresholdSeconds; index += 1) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+    expect(state.phase).toBe('swatting');
+
+    while (state.currentGame) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+    expect(state.phase).toBe('monitoring');
+    expect(state.boredomGameTriggered).toBe(true);
+
+    for (let index = 0; index < boredomThresholdSeconds + 2; index += 1) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+
+    expect(state.phase).toBe('monitoring');
+    expect(state.currentGame).toBeNull();
+    expect(state.completedEvents).toHaveLength(1);
+  });
+
+  it('ミーティング終了で完了フェーズに移り終了時刻を記録するべき', () => {
+    let state = startMeeting();
+
+    for (let index = 0; index < 5; index += 1) {
+      state = advanceMeeting(state, createGameFixture);
+    }
+
+    const ended = endMeeting(state);
+
+    expect(ended.phase).toBe('completed');
+    expect(ended.endedAtSecond).toBe(state.meetingSeconds);
+    expect(ended.lastActivityLabel).toBe('ミーティングを終了');
+  });
+
+  it('完了フェーズではアクティビティも経過秒も進めないべき', () => {
+    const completed: ReturnType<typeof endMeeting> = endMeeting({
+      ...startMeeting(),
+      meetingSeconds: 10,
+    });
+
+    const advanced = advanceMeeting(completed, createGameFixture);
+    const acted = registerActivity(completed, '発言した');
+
+    expect(advanced).toEqual(completed);
+    expect(acted).toEqual(completed);
   });
 
   it('介入中のフィードバックで説明中と危険度を読めるべき', () => {
