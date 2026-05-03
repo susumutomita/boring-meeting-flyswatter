@@ -317,7 +317,42 @@ const App = () => {
         </header>
 
         {audioError ? (
-          <output className="audio-error">{audioError}</output>
+          <div className="audio-error">
+            <output>{audioError}</output>
+            <div className="audio-error-actions">
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('off');
+                  window.requestAnimationFrame(() => setAudioSource('tab'));
+                }}
+                type="button"
+              >
+                タブ音声で再試行
+              </button>
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('mic');
+                }}
+                type="button"
+              >
+                マイク検知に切替
+              </button>
+              <button
+                className="action"
+                onClick={() => {
+                  setAudioError(null);
+                  setAudioSource('off');
+                }}
+                type="button"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
         ) : null}
 
         {!pipSupported && isRunning ? (

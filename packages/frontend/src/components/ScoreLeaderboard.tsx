@@ -79,9 +79,12 @@ export const ScoreLeaderboard = ({
                     <small>NOW</small>
                     {snapshot.score}
                   </span>
-                  {snapshot.swattingStartedAt ? (
-                    <span className="score-board-bored-at">
-                      <small>退屈時刻</small>
+                </div>
+
+                {snapshot.swattingStartedAt ? (
+                  <div className="score-board-bored-at">
+                    <small>退屈時刻</small>
+                    <span>
                       {new Date(snapshot.swattingStartedAt).toLocaleTimeString(
                         'ja-JP',
                         {
@@ -92,8 +95,8 @@ export const ScoreLeaderboard = ({
                         }
                       )}
                     </span>
-                  ) : null}
-                </div>
+                  </div>
+                ) : null}
 
                 {snapshot.reasons.length > 0 ? (
                   <ul className="score-board-reasons">

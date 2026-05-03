@@ -16,7 +16,7 @@ export const ReasonPicker = ({
   >
     <header className="reason-picker-head">
       <span className="reason-picker-eyebrow">なぜ退屈？</span>
-      <small>当てはまるものをタップ ( 自由入力なし )</small>
+      <small>もっとも当てはまるものを 1 つだけ選ぶ</small>
     </header>
     <div className="reason-picker-tags">
       {boredomReasonPresets.map((preset) => {
