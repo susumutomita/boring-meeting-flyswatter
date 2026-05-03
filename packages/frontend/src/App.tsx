@@ -17,11 +17,9 @@ import { useSwatter } from './hooks/useSwatter';
 import { useTabAudioActivity } from './hooks/useTabAudioActivity';
 import {
   advanceMeeting,
-  boredomThresholdSeconds,
   createGameSeed,
   createInitialMeetingState,
   endMeeting,
-  getBoredomGauge,
   moveFlies,
   registerActivity,
   selectMeetingMetrics,
@@ -200,6 +198,7 @@ const App = () => {
       phase: state.phase,
       updatedAt: Date.now(),
       reasons: state.boredomReasons,
+      swattingStartedAt: state.swattingStartedAt,
     }),
     [
       selfPeerId,
@@ -208,6 +207,7 @@ const App = () => {
       state.phase,
       bestScore,
       state.boredomReasons,
+      state.swattingStartedAt,
     ]
   );
 
@@ -222,14 +222,9 @@ const App = () => {
   });
 
   const metrics = selectMeetingMetrics(state);
-  const boredomGauge = getBoredomGauge(state);
   const swattingFeedback = state.currentGame
     ? selectSwattingFeedback(state.currentGame)
     : null;
-  const idleCountdown = Math.max(
-    0,
-    boredomThresholdSeconds - state.inactiveSeconds
-  );
 
   const pipEnabled = isRunning;
   const { pipWindow, isSupported: pipSupported } = useDocumentPip({
@@ -282,7 +277,6 @@ const App = () => {
   const pipNode =
     pipWindow && isRunning ? (
       <PipMeter
-        boredomGauge={boredomGauge}
         isCapturing={isCapturing}
         speechLevelDb={levelDb}
         showToast={isSwatting}
@@ -349,14 +343,14 @@ const App = () => {
                   ? '右上のボタンから'
                   : state.boredomGameTriggered
                     ? '退屈ポイント検知済み'
-                    : '退屈到達まで'
+                    : '会議を観測中'
               }
               idleValue={
                 isIdle
                   ? 'ミーティング開始'
                   : state.boredomGameTriggered
                     ? '終了で振り返り'
-                    : `${idleCountdown}s`
+                    : '沈黙を待機'
               }
               onPointerDown={handlePointerDown}
               onPointerMove={handlePointerMove}
@@ -379,7 +373,7 @@ const App = () => {
           )}
 
           {isCompleted ? null : (
-            <MeetingHud boredomGauge={boredomGauge} metrics={metrics}>
+            <MeetingHud metrics={metrics}>
               {state.boredomGameTriggered ? (
                 <ReasonPicker
                   reasons={state.boredomReasons}

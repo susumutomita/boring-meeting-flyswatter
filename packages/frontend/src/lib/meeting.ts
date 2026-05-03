@@ -1,4 +1,4 @@
-export const boredomThresholdSeconds = 8;
+export const boredomThresholdSeconds = 60;
 export const gameDurationSeconds = 20;
 export const flyCount = 6;
 export const counterThresholdTicks = 36;
@@ -78,6 +78,7 @@ export type MeetingState = {
   completedEvents: CompletedBoredomEvent[];
   currentGame: ActiveGame | null;
   firstBoredomSecond: number | null;
+  swattingStartedAt: number | null;
   lastActivityLabel: string;
   boredomGameTriggered: boolean;
   endedAtSecond: number | null;
@@ -199,6 +200,7 @@ export const createInitialMeetingState = (): MeetingState => ({
   completedEvents: [],
   currentGame: null,
   firstBoredomSecond: null,
+  swattingStartedAt: null,
   lastActivityLabel: '待機中',
   boredomGameTriggered: false,
   endedAtSecond: null,
@@ -344,6 +346,7 @@ export const advanceMeeting = (
         atSecond,
       },
       firstBoredomSecond: state.firstBoredomSecond ?? atSecond,
+      swattingStartedAt: state.swattingStartedAt ?? Date.now(),
       lastActivityLabel: '退屈を検知',
       boredomGameTriggered: true,
     };

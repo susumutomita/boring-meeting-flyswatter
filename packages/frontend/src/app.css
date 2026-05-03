@@ -1293,8 +1293,20 @@ button {
   letter-spacing: 0.02em;
 }
 
+.score-board-bored-at {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-left: auto;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 1rem;
+  letter-spacing: 0.04em;
+  color: rgba(24, 25, 27, 0.7);
+}
+
 .score-board-best small,
-.score-board-current small {
+.score-board-current small,
+.score-board-bored-at small {
   font-family: "VT323", "Courier New", monospace;
   font-size: 0.66rem;
   font-weight: 400;
