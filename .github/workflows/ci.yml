@@ -15,6 +15,11 @@ on:
   push:
   workflow_dispatch:
 
+env:
+  # Opt into Node.js 24 for JavaScript actions ahead of the June 2026
+  # default flip. Removes the deprecation warning surfaced on every run.
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   ci:
     runs-on: ubuntu-latest
