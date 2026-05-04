@@ -31,13 +31,6 @@ import {
   sanitizeRoomCode,
 } from './lib/scoreShare';
 
-const phaseStatusLabel: Record<string, string> = {
-  idle: '待機',
-  monitoring: '進行中',
-  swatting: 'ハエ叩き中',
-  completed: '終了',
-};
-
 const readPersisted = (key: string, fallback: string): string => {
   if (typeof window === 'undefined') {
     return fallback;
@@ -242,11 +235,7 @@ const App = () => {
         primary: true,
       }
     : isCompleted
-      ? {
-          label: 'もう一度',
-          onClick: () => setState(createInitialMeetingState()),
-          primary: true,
-        }
+      ? null
       : {
           label: 'ミーティング終了',
           onClick: () => setState((current) => endMeeting(current)),
@@ -285,13 +274,6 @@ const App = () => {
     <div className="shell simple-shell">
       <main className="game-board">
         <header className="game-topbar">
-          <div className="brand-lockup" aria-label="Boring Meeting Flyswatter">
-            <span className="brand-mark">BMF</span>
-            <span className="game-status">
-              {phaseStatusLabel[state.phase] ?? '待機'}
-            </span>
-          </div>
-
           <div className="top-actions" data-no-activity-capture="true">
             {isRunning ? (
               <button
@@ -303,13 +285,15 @@ const App = () => {
                 {audioSourceLabel[audioSource]}
               </button>
             ) : null}
-            <button
-              className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
-              onClick={primaryButton.onClick}
-              type="button"
-            >
-              {primaryButton.label}
-            </button>
+            {primaryButton ? (
+              <button
+                className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
+                onClick={primaryButton.onClick}
+                type="button"
+              >
+                {primaryButton.label}
+              </button>
+            ) : null}
           </div>
         </header>
 
@@ -362,7 +346,6 @@ const App = () => {
           {isCompleted ? (
             <MeetingSummary
               state={state}
-              onRestart={() => setState(createInitialMeetingState())}
               roomCodeInput={roomCodeInput}
               displayNameInput={displayNameInput}
               isShareJoined={isShareJoined}

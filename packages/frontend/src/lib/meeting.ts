@@ -13,6 +13,28 @@ export const treatBoostMultiplier = 2;
 export const productivityScoreMin = 1;
 export const productivityScoreMax = 10;
 
+export type SwatTier = 'platinum' | 'gold' | 'bronze' | 'rookie';
+
+export const swatTier = (score: number): SwatTier => {
+  if (score >= 9) {
+    return 'platinum';
+  }
+  if (score >= 6) {
+    return 'gold';
+  }
+  if (score >= 1) {
+    return 'bronze';
+  }
+  return 'rookie';
+};
+
+export const swatTierLabel: Record<SwatTier, string> = {
+  platinum: 'プラチナ',
+  gold: 'ゴールド',
+  bronze: 'ブロンズ',
+  rookie: '見習い',
+};
+
 export const boredomReasonPresets = [
   '議題が逸れた',
   '一方通行',

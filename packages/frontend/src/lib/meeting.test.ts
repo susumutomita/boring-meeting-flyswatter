@@ -21,6 +21,7 @@ import {
   setProductivityScore,
   startMeeting,
   swatFly,
+  swatTier,
   swatTreat,
   toggleBoredomReason,
   treatBoostMultiplier,
@@ -469,6 +470,16 @@ describe('会議退屈度ロジック', () => {
     state = toggleBoredomReason(state, '一方通行');
 
     expect(state.boredomReasons).toEqual(['一方通行']);
+  });
+
+  it('ハエ叩きスコアの称号はしきい値で切り替わるべき', () => {
+    expect(swatTier(0)).toBe('rookie');
+    expect(swatTier(1)).toBe('bronze');
+    expect(swatTier(5)).toBe('bronze');
+    expect(swatTier(6)).toBe('gold');
+    expect(swatTier(8)).toBe('gold');
+    expect(swatTier(9)).toBe('platinum');
+    expect(swatTier(20)).toBe('platinum');
   });
 
   it('生産性スコアは完了フェーズでのみ 1 〜 10 にクランプされて反映されるべき', () => {

@@ -5,18 +5,17 @@ import {
   type MeetingState,
   boredomReasonPresets,
   formatClock,
-  formatPercent,
   productivityScoreMax,
   productivityScoreMin,
   selectMeetingMetrics,
-  targetScore,
+  swatTier,
+  swatTierLabel,
 } from '../lib/meeting';
 import { selectQuote } from '../lib/quotes';
 import { type ScoreSnapshot, tallyReasons } from '../lib/scoreShare';
 
 type MeetingSummaryProps = {
   state: MeetingState;
-  onRestart: () => void;
   roomCodeInput: string;
   displayNameInput: string;
   isShareJoined: boolean;
@@ -42,7 +41,6 @@ const formatWallClock = (timestamp: number): string =>
 
 export const MeetingSummary = ({
   state,
-  onRestart,
   roomCodeInput,
   displayNameInput,
   isShareJoined,
@@ -64,8 +62,8 @@ export const MeetingSummary = ({
     ? formatClock(metrics.firstBoredomSecond)
     : '退屈ポイント未到達';
   const game = state.completedEvents[0] ?? null;
-  const swatScoreLabel = game ? `${game.swats}/${targetScore}` : '介入なし';
-  const swatPenaltyLabel = game ? `${game.penalties} 回反撃` : '介入なし';
+  const swatScoreLabel = game ? `${game.swats} 点` : '介入なし';
+  const swatScoreTier = game ? swatTier(game.swats) : null;
   const tally = tallyReasons(sharedPeers);
   const peakCount = tally[0]?.count ?? 0;
   const respondents = sharedPeers.filter(
@@ -98,27 +96,30 @@ export const MeetingSummary = ({
           <dd>{formatClock(state.totalInactiveSeconds)}</dd>
         </div>
         <div className="meeting-summary-row">
-          <dt>退屈率</dt>
-          <dd>{formatPercent(metrics.boredomRate)}</dd>
-        </div>
-        <div className="meeting-summary-row">
-          <dt>ハエ叩き結果</dt>
-          <dd>{swatScoreLabel}</dd>
-        </div>
-        <div className="meeting-summary-row">
-          <dt>反撃を受けた回数</dt>
-          <dd>{swatPenaltyLabel}</dd>
+          <dt>ハエ叩き</dt>
+          <dd>
+            {swatScoreLabel}
+            {swatScoreTier ? (
+              <span className={`tier-badge tier-${swatScoreTier}`}>
+                {swatTierLabel[swatScoreTier]}
+              </span>
+            ) : null}
+          </dd>
         </div>
       </dl>
 
       <section className="meeting-summary-productivity">
         <header className="meeting-summary-productivity-head">
-          <h3>この会議の生産性</h3>
+          <h3>主観評価</h3>
           <strong>
             {state.productivityScore ?? '—'}
             <small>/ {productivityScoreMax}</small>
           </strong>
         </header>
+        <p className="meeting-summary-productivity-hint">
+          この会議は自分にとってどれくらい生産的だった？ つまみを動かして 1 〜
+          10 で残す。
+        </p>
         <input
           aria-label="生産性スコア"
           className="meeting-summary-productivity-slider"
@@ -240,11 +241,15 @@ export const MeetingSummary = ({
                           ? formatWallClock(peer.swattingStartedAt)
                           : '--:--:--'}
                       </span>
+                      <span className="meeting-summary-roster-score">
+                        <small>ハエ叩き</small>
+                        {peer.bestScore} 点
+                      </span>
                       <span className="meeting-summary-roster-reason">
                         {peer.reasons[0] ?? '—'}
                       </span>
                       <span className="meeting-summary-roster-productivity">
-                        <small>生産性</small>
+                        <small>主観</small>
                         {peer.productivityScore ?? '—'}
                       </span>
                     </li>
@@ -305,16 +310,6 @@ export const MeetingSummary = ({
           — {selectQuote(totalDuration + state.totalInactiveSeconds).author}
         </cite>
       </blockquote>
-
-      <div className="meeting-summary-actions">
-        <button
-          className="action action-primary"
-          onClick={onRestart}
-          type="button"
-        >
-          もう一度
-        </button>
-      </div>
     </article>
   );
 };
