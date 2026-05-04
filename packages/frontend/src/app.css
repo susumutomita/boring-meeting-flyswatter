@@ -1037,7 +1037,65 @@ button {
 }
 
 .meeting-summary-roster-row {
-  grid-template-columns: minmax(0, 1.4fr) 80px minmax(0, 1.2fr) 70px;
+  grid-template-columns: minmax(0, 1.2fr) 80px 80px minmax(0, 1fr) 60px;
+}
+
+.meeting-summary-roster-score {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1rem;
+}
+
+.meeting-summary-roster-score small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: rgba(24, 25, 27, 0.55);
+  text-transform: uppercase;
+}
+
+.tier-badge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tier-platinum {
+  background: linear-gradient(135deg, #d3e0ee, #ffffff);
+  color: #1a3851;
+  border: 1px solid #6c8aa6;
+}
+
+.tier-gold {
+  background: linear-gradient(135deg, #ffe066, #ffba3b);
+  color: #5a3b1f;
+  border: 1px solid #c79628;
+}
+
+.tier-bronze {
+  background: linear-gradient(135deg, #d09a6c, #b07440);
+  color: #44260f;
+  border: 1px solid #8c4f1f;
+}
+
+.tier-rookie {
+  background: rgba(24, 25, 27, 0.06);
+  color: rgba(24, 25, 27, 0.55);
+  border: 1px solid var(--line);
+}
+
+.meeting-summary-productivity-hint {
+  margin: 0;
+  font-size: 0.86rem;
+  color: rgba(24, 25, 27, 0.62);
 }
 
 .meeting-summary-roster-productivity {
