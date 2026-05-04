@@ -547,41 +547,9 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     };
   });
 
-  const counterIndex = isBriefing
-    ? -1
-    : flies.reduce<number>((selectedIndex, fly, index) => {
-        if (fly.charge < counterThresholdTicks) {
-          return selectedIndex;
-        }
-
-        if (selectedIndex === -1 || fly.charge > flies[selectedIndex]?.charge) {
-          return index;
-        }
-
-        return selectedIndex;
-      }, -1);
-
-  let penalties = state.currentGame.penalties;
-  let triggeredCounter = false;
-  let activeFlies = flies;
-
-  if (counterIndex >= 0) {
-    penalties += 1;
-    triggeredCounter = true;
-    activeFlies = flies.map((fly, index) =>
-      index === counterIndex
-        ? {
-            ...fly,
-            charge: 0,
-            velocityX: fly.velocityX * -1,
-            velocityY: fly.velocityY * -1,
-          }
-        : {
-            ...fly,
-            charge: 0,
-          }
-    );
-  }
+  // 反撃ロジックは廃止。チャージは描画用のレガシーフィールドとして残す。
+  const penalties = state.currentGame.penalties;
+  const activeFlies = flies;
 
   const nextSpawnRemaining = Math.max(
     0,
@@ -628,20 +596,14 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     treatSpawnTicksRemaining: nextSpawnRemaining,
   };
 
-  if (currentGame.penalties >= maxPenalties) {
-    return settleCurrentGame(state, currentGame, '反撃を受け切って会議に復帰');
-  }
-
   return {
     ...state,
     currentGame,
     lastActivityLabel: isBriefing
       ? 'ハエ叩きの説明中'
-      : triggeredCounter
-        ? 'ハエが反撃した'
-        : shouldSpawnTreat
-          ? 'ボーナスが現れた'
-          : state.lastActivityLabel,
+      : shouldSpawnTreat
+        ? 'ボーナスが現れた'
+        : state.lastActivityLabel,
   };
 };
 
@@ -649,35 +611,13 @@ export const selectSwattingFeedback = (
   game: ActiveGameSeed
 ): SwattingFeedback => {
   const isBriefing = game.graceTicks > 0;
-  const maxCharge = game.flies.reduce(
-    (currentMax, fly) => Math.max(currentMax, fly.charge),
-    0
-  );
-  const pressurePercent = isBriefing
-    ? 0
-    : Math.min(100, Math.round((maxCharge / counterThresholdTicks) * 100));
-  const dangerCount = isBriefing
-    ? 0
-    : game.flies.filter(
-        (fly) => fly.charge >= counterThresholdTicks * dangerChargeRatio
-      ).length;
 
   if (isBriefing) {
     return {
       headline: '説明中',
       detail: 'まずはハエの動きを確認。ポインターを動かして狙いを合わせる。',
-      pressurePercent,
-      dangerCount,
-      isBriefing,
-    };
-  }
-
-  if (dangerCount > 0) {
-    return {
-      headline: '反撃寸前',
-      detail: '赤く強く光るハエから先に叩いて、会議の空気を守る。',
-      pressurePercent,
-      dangerCount,
+      pressurePercent: 0,
+      dangerCount: 0,
       isBriefing,
     };
   }
@@ -686,8 +626,8 @@ export const selectSwattingFeedback = (
     return {
       headline: '締めの一振り',
       detail: '残り時間わずか。拾えるハエを叩いてテンポを戻す。',
-      pressurePercent,
-      dangerCount,
+      pressurePercent: 0,
+      dangerCount: 0,
       isBriefing,
     };
   }
@@ -695,8 +635,8 @@ export const selectSwattingFeedback = (
   return {
     headline: '空気を起こす',
     detail: '逃げ回るハエを叩いて、停滞した会議のテンポを戻す。',
-    pressurePercent,
-    dangerCount,
+    pressurePercent: 0,
+    dangerCount: 0,
     isBriefing,
   };
 };

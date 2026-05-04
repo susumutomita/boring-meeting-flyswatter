@@ -223,7 +223,7 @@ describe('会議退屈度ロジック', () => {
     expect(movedFly?.velocityY).toBeLessThan(0);
   });
 
-  it('放置した標的は反撃してペナルティを増やすべき', () => {
+  it('チャージが溜まってもハエは反撃せずペナルティも増えないべき', () => {
     const state = {
       ...startMeeting(),
       phase: 'swatting' as const,
@@ -241,62 +241,8 @@ describe('会議退屈度ロジック', () => {
 
     const nextState = moveFlies(state);
 
-    expect(nextState.currentGame?.penalties).toBe(1);
-    expect(nextState.currentGame?.flies[0]?.charge).toBe(0);
-    expect(nextState.lastActivityLabel).toBe('ハエが反撃した');
-  });
-
-  it('同時に複数が溜まっても反撃は連鎖させないべき', () => {
-    const state = {
-      ...startMeeting(),
-      phase: 'swatting' as const,
-      currentGame: {
-        ...createGameFixture(),
-        atSecond: boredomThresholdSeconds,
-        flies: [
-          {
-            ...createFlyFixture(606),
-            charge: counterThresholdTicks - 1,
-          },
-          {
-            ...createFlyFixture(707),
-            charge: counterThresholdTicks - 1,
-          },
-        ],
-      },
-    };
-
-    const nextState = moveFlies(state);
-    const afterCooldownState = moveFlies(nextState);
-
-    expect(nextState.currentGame?.penalties).toBe(1);
-    expect(nextState.currentGame?.flies.every((fly) => fly.charge === 0)).toBe(
-      true
-    );
-    expect(afterCooldownState.currentGame?.penalties).toBe(1);
-  });
-
-  it('残機を使い切るまでは介入を続けるべき', () => {
-    const state = {
-      ...startMeeting(),
-      phase: 'swatting' as const,
-      currentGame: {
-        ...createGameFixture(),
-        atSecond: boredomThresholdSeconds,
-        penalties: maxPenalties - 2,
-        flies: [
-          {
-            ...createFlyFixture(808),
-            charge: counterThresholdTicks - 1,
-          },
-        ],
-      },
-    };
-
-    const nextState = moveFlies(state);
-
-    expect(nextState.phase).toBe('swatting');
-    expect(nextState.currentGame?.penalties).toBe(maxPenalties - 1);
+    expect(nextState.currentGame?.penalties).toBe(0);
+    expect(nextState.lastActivityLabel).not.toBe('ハエが反撃した');
   });
 
   it('ハエ叩きは 1 ミーティング 1 回しか発火しないべき', () => {
@@ -519,26 +465,25 @@ describe('会議退屈度ロジック', () => {
     expect(acted).toEqual(completed);
   });
 
-  it('介入中のフィードバックで説明中と危険度を読めるべき', () => {
+  it('介入中のフィードバックは説明中と通常で読み分けられるべき', () => {
     const briefingFeedback = selectSwattingFeedback({
       ...createGameFixture(),
       graceTicks: openingGraceTicks,
     });
-    const urgentFeedback = selectSwattingFeedback({
+    const playFeedback = selectSwattingFeedback({
       ...createGameFixture(),
       graceTicks: 0,
-      flies: [
-        {
-          ...createFlyFixture(909),
-          charge: Math.ceil(counterThresholdTicks * 0.8),
-        },
-      ],
+    });
+    const closingFeedback = selectSwattingFeedback({
+      ...createGameFixture(),
+      graceTicks: 0,
+      remainingSeconds: 3,
     });
 
     expect(briefingFeedback.isBriefing).toBe(true);
-    expect(briefingFeedback.pressurePercent).toBe(0);
-    expect(urgentFeedback.isBriefing).toBe(false);
-    expect(urgentFeedback.dangerCount).toBe(1);
-    expect(urgentFeedback.pressurePercent).toBeGreaterThanOrEqual(80);
+    expect(briefingFeedback.headline).toBe('説明中');
+    expect(playFeedback.isBriefing).toBe(false);
+    expect(playFeedback.headline).toBe('空気を起こす');
+    expect(closingFeedback.headline).toBe('締めの一振り');
   });
 });

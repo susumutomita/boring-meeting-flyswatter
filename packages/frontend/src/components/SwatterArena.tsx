@@ -3,10 +3,7 @@ import type { SwatTarget, SwatterPose } from '../hooks/useSwatter';
 import {
   type ActiveGame,
   type SwattingFeedback,
-  counterThresholdTicks,
   formatClock,
-  maxPenalties,
-  targetScore,
 } from '../lib/meeting';
 import { findSponsoredItem } from '../lib/sponsoredItems';
 
@@ -43,7 +40,6 @@ export const SwatterArena = ({
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
-  const lives = game ? maxPenalties - game.penalties : maxPenalties;
   const treat = game?.treat ?? null;
   const sponsoredItem = treat ? findSponsoredItem(treat.itemId) : null;
 
@@ -52,19 +48,13 @@ export const SwatterArena = ({
       <div className="game-scorebar">
         <div className="score-pill">
           <span>SCORE</span>
-          <strong>
-            {score}/{targetScore}
-          </strong>
+          <strong>{score}</strong>
         </div>
         <div className="score-pill">
           <span>TIME</span>
           <strong>
             {game ? formatClock(remainingSeconds) : formatClock(0)}
           </strong>
-        </div>
-        <div className="score-pill">
-          <span>LIFE</span>
-          <strong>{lives}</strong>
         </div>
       </div>
 
@@ -83,18 +73,6 @@ export const SwatterArena = ({
             <div className="arena-score" aria-hidden="true">
               {game.score}
             </div>
-            <div
-              aria-label="ハエの反撃ゲージ"
-              aria-valuemax={100}
-              aria-valuemin={0}
-              aria-valuenow={feedback?.pressurePercent ?? 0}
-              className="arena-pressure"
-              role="progressbar"
-              tabIndex={0}
-            >
-              <span className="arena-pressure-label">反撃</span>
-              <span className="arena-pressure-bar" />
-            </div>
 
             <div
               className="fly-zone"
@@ -109,11 +87,7 @@ export const SwatterArena = ({
                 .map((fly) => (
                   <button
                     aria-label="ハエを叩く"
-                    className={`fly-target ${
-                      fly.charge / counterThresholdTicks >= 0.72
-                        ? 'is-danger'
-                        : ''
-                    }`}
+                    className="fly-target"
                     key={fly.id}
                     onClick={(event) => {
                       event.stopPropagation();
@@ -131,10 +105,6 @@ export const SwatterArena = ({
                         '--fly-size': `${fly.size}px`,
                         '--fly-rotate': `${fly.rotation}deg`,
                         '--fly-hue': `${fly.hue}deg`,
-                        '--fly-threat': `${fly.charge / counterThresholdTicks}`,
-                        '--fly-scale': `${
-                          1 + (fly.charge / counterThresholdTicks) * 0.18
-                        }`,
                       } as CSSProperties
                     }
                     type="button"
