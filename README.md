@@ -6,6 +6,8 @@
 
 ブラウザだけで会議の沈黙を観測し、最初の退屈ポイントを記録、合間にハエ叩きで 1 度だけ介入する実験プロダクト。
 
+<img src="./docs/images/concept-poster.png" alt="ハエ叩きゲーム付き会議退屈度メーターの紹介ポスター" width="640" />
+
 [![ci](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml/badge.svg)](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml)
 [![pages](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/pages.yml/badge.svg)](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/pages.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
@@ -37,6 +39,13 @@
 
 > 「ビジネス会議で最大の問題は、それがしばしば退屈である、ということだ。」
 > — パトリック・レンシオーニ
+
+<details>
+<summary>ハッカソンで使ったピッチデッキ ( 概要図 )</summary>
+
+![会議退屈度メーターのピッチデッキ概要](./docs/images/pitch-deck.png)
+
+</details>
 
 ## 機能
 
