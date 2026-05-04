@@ -19,6 +19,7 @@ import {
   moveFlies,
   registerActivity,
   selectSwattingFeedback,
+  setProductivityScore,
   startMeeting,
   swatFly,
   swatTreat,
@@ -194,6 +195,7 @@ const App = () => {
       updatedAt: Date.now(),
       reasons: state.boredomReasons,
       swattingStartedAt: state.swattingStartedAt,
+      productivityScore: state.productivityScore,
     }),
     [
       selfPeerId,
@@ -203,6 +205,7 @@ const App = () => {
       bestScore,
       state.boredomReasons,
       state.swattingStartedAt,
+      state.productivityScore,
     ]
   );
 
@@ -373,6 +376,9 @@ const App = () => {
               onLeaveShare={() => setIsShareJoined(false)}
               onTogglePreset={(preset) =>
                 setState((current) => toggleBoredomReason(current, preset))
+              }
+              onProductivityChange={(score) =>
+                setState((current) => setProductivityScore(current, score))
               }
             />
           ) : (

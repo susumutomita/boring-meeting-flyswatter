@@ -10,6 +10,9 @@ export const openingGraceTicks = 28;
 export const treatSpawnTicks = 33;
 export const treatBoostMultiplier = 2;
 
+export const productivityScoreMin = 1;
+export const productivityScoreMax = 10;
+
 export const boredomReasonPresets = [
   '議題が逸れた',
   '一方通行',
@@ -86,6 +89,7 @@ export type MeetingState = {
   boredomGameTriggered: boolean;
   endedAtSecond: number | null;
   boredomReasons: BoredomReasonPreset[];
+  productivityScore: number | null;
 };
 
 export type MeetingMetrics = {
@@ -212,6 +216,7 @@ export const createInitialMeetingState = (): MeetingState => ({
   boredomGameTriggered: false,
   endedAtSecond: null,
   boredomReasons: [],
+  productivityScore: null,
 });
 
 export const startMeeting = (): MeetingState => ({
@@ -238,6 +243,23 @@ export const toggleBoredomReason = (
     ...state,
     boredomReasons: [preset],
   };
+};
+
+export const setProductivityScore = (
+  state: MeetingState,
+  rawScore: number
+): MeetingState => {
+  if (state.phase !== 'completed') {
+    return state;
+  }
+  if (!Number.isFinite(rawScore)) {
+    return state;
+  }
+  const clamped = Math.min(
+    productivityScoreMax,
+    Math.max(productivityScoreMin, Math.round(rawScore))
+  );
+  return { ...state, productivityScore: clamped };
 };
 
 export const endMeeting = (state: MeetingState): MeetingState => {

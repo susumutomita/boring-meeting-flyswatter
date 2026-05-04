@@ -6,6 +6,8 @@ import {
   boredomReasonPresets,
   formatClock,
   formatPercent,
+  productivityScoreMax,
+  productivityScoreMin,
   selectMeetingMetrics,
   targetScore,
 } from '../lib/meeting';
@@ -27,6 +29,7 @@ type MeetingSummaryProps = {
   onJoinShare: () => void;
   onLeaveShare: () => void;
   onTogglePreset: (preset: BoredomReasonPreset) => void;
+  onProductivityChange: (score: number) => void;
 };
 
 const formatWallClock = (timestamp: number): string =>
@@ -52,6 +55,7 @@ export const MeetingSummary = ({
   onJoinShare,
   onLeaveShare,
   onTogglePreset,
+  onProductivityChange,
 }: MeetingSummaryProps) => {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const metrics = selectMeetingMetrics(state);
@@ -106,6 +110,30 @@ export const MeetingSummary = ({
           <dd>{swatPenaltyLabel}</dd>
         </div>
       </dl>
+
+      <section className="meeting-summary-productivity">
+        <header className="meeting-summary-productivity-head">
+          <h3>この会議の生産性</h3>
+          <strong>
+            {state.productivityScore ?? '—'}
+            <small>/ {productivityScoreMax}</small>
+          </strong>
+        </header>
+        <input
+          aria-label="生産性スコア"
+          className="meeting-summary-productivity-slider"
+          max={productivityScoreMax}
+          min={productivityScoreMin}
+          onChange={(event) => onProductivityChange(Number(event.target.value))}
+          step={1}
+          type="range"
+          value={state.productivityScore ?? Math.ceil(productivityScoreMax / 2)}
+        />
+        <div className="meeting-summary-productivity-scale">
+          <span>そうじゃない</span>
+          <span>めっちゃ生産性高い</span>
+        </div>
+      </section>
 
       {canEditReason ? (
         <section className="meeting-summary-reasons">
@@ -214,6 +242,10 @@ export const MeetingSummary = ({
                       </span>
                       <span className="meeting-summary-roster-reason">
                         {peer.reasons[0] ?? '—'}
+                      </span>
+                      <span className="meeting-summary-roster-productivity">
+                        <small>生産性</small>
+                        {peer.productivityScore ?? '—'}
                       </span>
                     </li>
                   );

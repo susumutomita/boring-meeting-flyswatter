@@ -9,6 +9,7 @@ export type ScoreSnapshot = {
   updatedAt: number;
   reasons: BoredomReasonPreset[];
   swattingStartedAt: number | null;
+  productivityScore: number | null;
 };
 
 export type ReasonTally = {

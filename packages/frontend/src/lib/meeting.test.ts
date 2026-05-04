@@ -12,10 +12,13 @@ import {
   maxPenalties,
   moveFlies,
   openingGraceTicks,
+  productivityScoreMax,
+  productivityScoreMin,
   registerActivity,
   selectFlyInSwatReach,
   selectMeetingMetrics,
   selectSwattingFeedback,
+  setProductivityScore,
   startMeeting,
   swatFly,
   swatTreat,
@@ -466,6 +469,30 @@ describe('会議退屈度ロジック', () => {
     state = toggleBoredomReason(state, '一方通行');
 
     expect(state.boredomReasons).toEqual(['一方通行']);
+  });
+
+  it('生産性スコアは完了フェーズでのみ 1 〜 10 にクランプされて反映されるべき', () => {
+    let state = startMeeting();
+    state = { ...state, phase: 'completed', endedAtSecond: 30 };
+
+    const valid = setProductivityScore(state, 7);
+    expect(valid.productivityScore).toBe(7);
+
+    const tooHigh = setProductivityScore(state, 99);
+    expect(tooHigh.productivityScore).toBe(productivityScoreMax);
+
+    const tooLow = setProductivityScore(state, -3);
+    expect(tooLow.productivityScore).toBe(productivityScoreMin);
+
+    const fractional = setProductivityScore(state, 4.6);
+    expect(fractional.productivityScore).toBe(5);
+  });
+
+  it('完了フェーズ以外で生産性スコアを設定しても無視されるべき', () => {
+    const monitoring = startMeeting();
+    const result = setProductivityScore(monitoring, 8);
+
+    expect(result.productivityScore).toBeNull();
   });
 
   it('完了フェーズではアクティビティも経過秒も進めないべき', () => {
