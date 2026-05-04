@@ -983,6 +983,81 @@ button {
   background: rgba(24, 25, 27, 0.06);
 }
 
+.meeting-summary-productivity {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.meeting-summary-productivity-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.meeting-summary-productivity-head h3 {
+  margin: 0;
+  font-family: "VT323", "Departure Mono", "Courier New", monospace;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.meeting-summary-productivity-head strong {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 2rem;
+  letter-spacing: 0.02em;
+}
+
+.meeting-summary-productivity-head strong small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: rgba(24, 25, 27, 0.55);
+  margin-left: 4px;
+}
+
+.meeting-summary-productivity-slider {
+  width: 100%;
+  accent-color: var(--ink);
+}
+
+.meeting-summary-productivity-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.84rem;
+  letter-spacing: 0.04em;
+  color: rgba(24, 25, 27, 0.62);
+}
+
+.meeting-summary-roster-row {
+  grid-template-columns: minmax(0, 1.4fr) 80px minmax(0, 1.2fr) 70px;
+}
+
+.meeting-summary-roster-productivity {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 1rem;
+  text-align: right;
+  justify-self: end;
+}
+
+.meeting-summary-roster-productivity small {
+  font-family: "VT323", "Courier New", monospace;
+  font-size: 0.66rem;
+  letter-spacing: 0.06em;
+  color: rgba(24, 25, 27, 0.55);
+  text-transform: uppercase;
+}
+
 .meeting-summary-reasons-hint {
   margin: 0 0 6px;
   font-size: 0.86rem;

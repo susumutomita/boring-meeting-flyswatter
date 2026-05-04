@@ -21,6 +21,7 @@ const buildSnapshot = (
   updatedAt: 0,
   reasons: [],
   swattingStartedAt: null,
+  productivityScore: null,
   ...overrides,
 });
 
