@@ -5,6 +5,7 @@ import { PipMeter } from './components/PipMeter';
 import { ReasonPicker } from './components/ReasonPicker';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
+import { useBoredomNotification } from './hooks/useBoredomNotification';
 import { useDocumentPip } from './hooks/useDocumentPip';
 import { useMeetingTick } from './hooks/useMeetingTick';
 import { useMicrophoneActivity } from './hooks/useMicrophoneActivity';
@@ -21,10 +22,12 @@ import {
   selectSwattingFeedback,
   setProductivityScore,
   startMeeting,
+  startSwattingGame,
   swatFly,
   swatTreat,
   toggleBoredomReason,
 } from './lib/meeting';
+import { pickMeetingTip } from './lib/meetingTips';
 import {
   type ScoreSnapshot,
   sanitizeDisplayName,
@@ -80,6 +83,15 @@ const App = () => {
   );
   const [isShareJoined, setIsShareJoined] = useState(false);
   const [bestScore, setBestScore] = useState(0);
+  const [tipSeed, setTipSeed] = useState(() => Date.now());
+
+  useEffect(() => {
+    const id = window.setInterval(() => setTipSeed(Date.now()), 8000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const isSwatArmed = state.currentGame?.armed === true;
+  const meetingTip = pickMeetingTip(tipSeed);
   const [treatBoostPopup, setTreatBoostPopup] = useState<{
     id: number;
     x: number;
@@ -117,6 +129,11 @@ const App = () => {
     enabled: isRunning,
     onActivity: (label) =>
       setState((current) => registerActivity(current, label)),
+  });
+
+  useBoredomNotification({
+    enabled: isRunning,
+    isSwatting,
   });
 
   const handleSpeech = () =>
@@ -388,14 +405,14 @@ const App = () => {
                     ? '右上のボタンから'
                     : state.boredomGameTriggered
                       ? '退屈ポイント検知済み'
-                      : '会議を観測中'
+                      : '生産的な会議のコツ'
                 }
                 idleValue={
                   isIdle
                     ? 'ミーティング開始'
                     : state.boredomGameTriggered
                       ? '終了で振り返り'
-                      : '沈黙を待機'
+                      : meetingTip
                 }
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}
@@ -415,6 +432,30 @@ const App = () => {
                 }}
                 treatBoostPopup={treatBoostPopup}
               />
+
+              {isSwatArmed ? (
+                <div className="swat-armed-overlay">
+                  <div className="swat-armed-card">
+                    <span className="swat-armed-eyebrow">退屈ポイント検知</span>
+                    <h2 className="swat-armed-title">
+                      ハエ叩き、開始しますか？
+                    </h2>
+                    <p className="swat-armed-body">
+                      会議が 60 秒静まりました。クリックすると 30
+                      秒のハエ叩きが始まります。
+                    </p>
+                    <button
+                      className="action action-primary swat-armed-action"
+                      onClick={() =>
+                        setState((current) => startSwattingGame(current))
+                      }
+                      type="button"
+                    >
+                      ハエ叩きを始める
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               {state.boredomGameTriggered &&
               state.boredomReasons.length === 0 ? (

@@ -1,7 +1,7 @@
 import { pickSponsoredItem } from './sponsoredItems';
 
 export const boredomThresholdSeconds = 60;
-export const gameDurationSeconds = 20;
+export const gameDurationSeconds = 30;
 export const flyCount = 6;
 export const counterThresholdTicks = 36;
 export const targetScore = 10;
@@ -92,6 +92,7 @@ export type ActiveGameSeed = {
   treat: Treat | null;
   treatSpawnTicksRemaining: number;
   treatConsumed: boolean;
+  armed: boolean;
 };
 
 export type ActiveGame = ActiveGameSeed & {
@@ -223,6 +224,7 @@ export const createGameSeed = (): ActiveGameSeed => ({
   treat: null,
   treatSpawnTicksRemaining: treatSpawnTicks,
   treatConsumed: false,
+  armed: true,
 });
 
 export const createInitialMeetingState = (): MeetingState => ({
@@ -264,6 +266,24 @@ export const toggleBoredomReason = (
   return {
     ...state,
     boredomReasons: [preset],
+  };
+};
+
+export const startSwattingGame = (state: MeetingState): MeetingState => {
+  if (
+    state.phase !== 'swatting' ||
+    !state.currentGame ||
+    !state.currentGame.armed
+  ) {
+    return state;
+  }
+  return {
+    ...state,
+    currentGame: {
+      ...state.currentGame,
+      armed: false,
+    },
+    lastActivityLabel: 'ハエ叩きを開始',
   };
 };
 
@@ -347,8 +367,18 @@ export const advanceMeeting = (
   const nextMeetingSeconds = state.meetingSeconds + 1;
 
   if (state.currentGame) {
-    const nextRemainingSeconds = state.currentGame.remainingSeconds - 1;
     const totalInactiveSeconds = state.totalInactiveSeconds + 1;
+
+    // armed = ハエ叩き起動待機中。ユーザがクリックするまでタイマーは進めない。
+    if (state.currentGame.armed) {
+      return {
+        ...state,
+        meetingSeconds: nextMeetingSeconds,
+        totalInactiveSeconds,
+      };
+    }
+
+    const nextRemainingSeconds = state.currentGame.remainingSeconds - 1;
 
     if (nextRemainingSeconds <= 0) {
       return settleCurrentGame(
@@ -436,10 +466,6 @@ export const swatFly = (
     flies,
   };
 
-  if (currentGame.score >= targetScore) {
-    return settleCurrentGame(state, currentGame, 'ノルマ達成で会議に復帰');
-  }
-
   return {
     ...state,
     currentGame,
@@ -463,14 +489,6 @@ export const swatTreat = (state: MeetingState): MeetingState => {
     treatConsumed: true,
     score: doubledScore,
   };
-
-  if (doubledScore >= targetScore) {
-    return settleCurrentGame(
-      state,
-      currentGame,
-      'ボーナスでノルマ達成し会議に復帰'
-    );
-  }
 
   return {
     ...state,
@@ -514,6 +532,11 @@ export const selectFlyInSwatReach = (
 
 export const moveFlies = (state: MeetingState): MeetingState => {
   if (!state.currentGame) {
+    return state;
+  }
+
+  // armed のあいだはハエもボーナスも動かさない。ユーザが開始するまで盤面停止。
+  if (state.currentGame.armed) {
     return state;
   }
 
