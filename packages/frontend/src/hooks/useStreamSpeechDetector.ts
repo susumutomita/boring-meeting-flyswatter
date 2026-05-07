@@ -95,6 +95,13 @@ export const useStreamSpeechDetector = ({
         }
 
         audioContext = buildAudioContext();
+        if (audioContext.state === 'suspended') {
+          await audioContext.resume().catch(() => {});
+          if (cancelled) {
+            teardown();
+            return;
+          }
+        }
         const source = audioContext.createMediaStreamSource(stream);
         const analyser = audioContext.createAnalyser();
         analyser.fftSize = 1024;
