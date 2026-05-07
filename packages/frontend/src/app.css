@@ -124,6 +124,13 @@ button {
   color: #ffffff;
 }
 
+.language-picker {
+  min-width: 56px;
+  padding: 10px 12px;
+  font-family: "VT323", "Courier New", monospace;
+  letter-spacing: 0.08em;
+}
+
 .action:hover,
 .activity-chip:hover {
   transform: translateY(-1px);

@@ -11,6 +11,13 @@ import { useMicrophoneActivity } from './hooks/useMicrophoneActivity';
 import { useScoreShare } from './hooks/useScoreShare';
 import { useSwatter } from './hooks/useSwatter';
 import {
+  type Language,
+  cycleLanguage,
+  detectInitialLanguage,
+  languageShortLabel,
+  translate,
+} from './lib/i18n';
+import {
   advanceMeeting,
   createGameSeed,
   createInitialMeetingState,
@@ -81,6 +88,21 @@ const App = () => {
   const [isShareJoined, setIsShareJoined] = useState(false);
   const [bestScore, setBestScore] = useState(0);
   const [tipSeed] = useState(() => Date.now());
+  const [language, setLanguage] = useState<Language>(() =>
+    detectInitialLanguage(
+      typeof navigator === 'undefined' ? undefined : navigator.language,
+      readPersisted('bmf:language', '') || null
+    )
+  );
+
+  useEffect(() => {
+    writePersisted('bmf:language', language);
+  }, [language]);
+
+  const t = (
+    key: Parameters<typeof translate>[1],
+    params?: Parameters<typeof translate>[2]
+  ) => translate(language, key, params);
 
   const isSwatArmed = state.currentGame?.armed === true;
   const meetingTip = pickMeetingTip(tipSeed);
@@ -126,6 +148,8 @@ const App = () => {
   useBoredomNotification({
     enabled: isRunning,
     isSwatting,
+    title: translate(language, 'notification_title'),
+    body: translate(language, 'notification_body'),
   });
 
   const handleSpeech = () =>
@@ -233,14 +257,14 @@ const App = () => {
 
   const primaryButton = isIdle
     ? {
-        label: 'ミーティング開始',
+        label: t('start_meeting'),
         onClick: () => setState(startMeeting()),
         primary: true,
       }
     : isCompleted
       ? null
       : {
-          label: 'ミーティング終了',
+          label: t('end_meeting'),
           onClick: () => setState((current) => endMeeting(current)),
           primary: false,
         };
@@ -256,6 +280,13 @@ const App = () => {
         speechLevelDb={levelDb}
         showToast={isSwatting}
         onToastClick={handleToastClick}
+        labels={{
+          tracking: t('pip_tracking'),
+          idle: t('pip_idle'),
+          volume: t('pip_volume'),
+          toast: t('pip_toast'),
+          toastSub: t('pip_toast_sub'),
+        }}
       />
     ) : null;
 
@@ -264,6 +295,15 @@ const App = () => {
       <main className="game-board">
         <header className="game-topbar">
           <div className="top-actions" data-no-activity-capture="true">
+            <button
+              aria-label={t('language_picker_label')}
+              className="action language-picker"
+              onClick={() => setLanguage((current) => cycleLanguage(current))}
+              title={t('language_picker_label')}
+              type="button"
+            >
+              {languageShortLabel[language]}
+            </button>
             {primaryButton ? (
               <button
                 className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
@@ -285,16 +325,14 @@ const App = () => {
                 onClick={() => setAudioError(null)}
                 type="button"
               >
-                閉じる
+                {t('audio_error_close')}
               </button>
             </div>
           </div>
         ) : null}
 
         {!pipSupported && isRunning ? (
-          <output className="pip-hint">
-            このブラウザは PiP 非対応です。会議画面と並べてご利用ください。
-          </output>
+          <output className="pip-hint">{t('pip_not_supported')}</output>
         ) : null}
 
         <section className="play-stage">
@@ -328,16 +366,16 @@ const App = () => {
                 knockedFlyIds={knockedFlyIds}
                 idleLabel={
                   isIdle
-                    ? '右上のボタンから'
+                    ? t('idle_click_top_right')
                     : state.boredomGameTriggered
-                      ? '退屈ポイント検知済み'
-                      : '生産的な会議のコツ'
+                      ? t('idle_boredom_detected')
+                      : t('idle_tip_label')
                 }
                 idleValue={
                   isIdle ? (
-                    'ミーティング開始'
+                    t('idle_start')
                   ) : state.boredomGameTriggered ? (
-                    '終了で振り返り'
+                    t('idle_end_to_review')
                   ) : (
                     <span className="meeting-tip">
                       <span className="meeting-tip-practice">
@@ -347,7 +385,7 @@ const App = () => {
                         {meetingTip.body}
                       </span>
                       <span className="meeting-tip-source">
-                        出典: {meetingTip.source}
+                        {t('meeting_tip_source')}: {meetingTip.source}
                       </span>
                     </span>
                   )
@@ -375,13 +413,14 @@ const App = () => {
               {isSwatArmed ? (
                 <div className="swat-armed-overlay">
                   <div className="swat-armed-card">
-                    <span className="swat-armed-eyebrow">退屈ポイント検知</span>
-                    <h2 className="swat-armed-title">
-                      ハエ叩き、開始しますか？
-                    </h2>
+                    <span className="swat-armed-eyebrow">
+                      {t('armed_eyebrow')}
+                    </span>
+                    <h2 className="swat-armed-title">{t('armed_title')}</h2>
                     <p className="swat-armed-body">
-                      会議が 60 秒静まりました。クリックすると{' '}
-                      {gameDurationSeconds} 秒のハエ叩きが始まります。
+                      {t('armed_body_template', {
+                        seconds: gameDurationSeconds,
+                      })}
                     </p>
                     <button
                       className="action action-primary swat-armed-action"
@@ -390,7 +429,7 @@ const App = () => {
                       }
                       type="button"
                     >
-                      ハエ叩きを始める
+                      {t('armed_action')}
                     </button>
                   </div>
                 </div>

@@ -3,6 +3,13 @@ type PipMeterProps = {
   speechLevelDb: number;
   showToast: boolean;
   onToastClick: () => void;
+  labels: {
+    tracking: string;
+    idle: string;
+    volume: string;
+    toast: string;
+    toastSub: string;
+  };
 };
 
 const formatDecibels = (decibels: number): string => {
@@ -17,24 +24,25 @@ export const PipMeter = ({
   speechLevelDb,
   showToast,
   onToastClick,
+  labels,
 }: PipMeterProps) => (
   <div className="pip-shell">
     <header className="pip-head">
       <span className="pip-mark">BMF</span>
       <span className={`pip-status ${isCapturing ? 'is-on' : ''}`}>
-        {isCapturing ? '観測中' : '待機'}
+        {isCapturing ? labels.tracking : labels.idle}
       </span>
     </header>
 
     <div className="pip-row pip-row-tight">
-      <span className="pip-label">音量</span>
+      <span className="pip-label">{labels.volume}</span>
       <span className="pip-mono">{formatDecibels(speechLevelDb)}</span>
     </div>
 
     {showToast ? (
       <button className="pip-toast" onClick={onToastClick} type="button">
-        退屈してる？
-        <small>クリックで叩きにいく</small>
+        {labels.toast}
+        <small>{labels.toastSub}</small>
       </button>
     ) : null}
   </div>
