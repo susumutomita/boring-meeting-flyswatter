@@ -148,16 +148,6 @@ button {
   gap: 12px;
 }
 
-.floating-reason-picker {
-  width: min(640px, 100%);
-  margin: 0 auto;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.95);
-  box-shadow: var(--shadow);
-  padding: 14px 16px;
-}
-
 .swat-armed-overlay {
   position: fixed;
   inset: 0;
