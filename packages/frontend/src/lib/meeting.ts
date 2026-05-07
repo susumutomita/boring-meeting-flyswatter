@@ -9,14 +9,8 @@ export const maxPenalties = 5;
 export const openingGraceTicks = 28;
 export const treatSpawnTicks = 33;
 export const treatBoostMultiplier = 2;
-export const alarmSpawnTicks = 33;
-export const alarmLifeTicks = 17;
-export const alarmHitReward = 10;
-export const alarmMissPenalty = 1;
 export const beeSpawnTicks = 66;
-export const beeStingPenalty = 20;
-export const beeStunTicks = 11;
-export const beeHitRadiusPercent = 8;
+export const beeHitReward = 10;
 
 export const productivityScoreMin = 1;
 export const productivityScoreMax = 10;
@@ -89,14 +83,6 @@ export type Treat = {
   age: number;
 };
 
-export type Alarm = {
-  id: number;
-  x: number;
-  y: number;
-  lifeTicks: number;
-  totalLifeTicks: number;
-};
-
 export type Bee = {
   id: number;
   x: number;
@@ -117,11 +103,8 @@ export type ActiveGameSeed = {
   treatSpawnTicksRemaining: number;
   treatConsumed: boolean;
   armed: boolean;
-  alarm: Alarm | null;
-  alarmSpawnTicksRemaining: number;
   bee: Bee | null;
   beeSpawnTicksRemaining: number;
-  stunTicksRemaining: number;
 };
 
 export type ActiveGame = ActiveGameSeed & {
@@ -173,7 +156,6 @@ export type SwatFieldSize = {
 let flyId = 0;
 let eventId = 0;
 let treatId = 0;
-let alarmId = 0;
 let beeId = 0;
 const beeOffscreenMargin = 6;
 const beeSpeedPercent = 4.2;
@@ -213,13 +195,6 @@ const treatBounds = {
   minY: 22,
   maxY: 70,
 };
-const alarmBounds = {
-  minX: 16,
-  maxX: 84,
-  minY: 24,
-  maxY: 68,
-};
-
 const nextFlyId = () => {
   flyId += 1;
   return flyId;
@@ -234,23 +209,6 @@ const nextTreatId = () => {
   treatId += 1;
   return treatId;
 };
-
-const nextAlarmId = () => {
-  alarmId += 1;
-  return alarmId;
-};
-
-export const createAlarm = (random = Math.random): Alarm => ({
-  id: nextAlarmId(),
-  x:
-    alarmBounds.minX +
-    Math.round(random() * (alarmBounds.maxX - alarmBounds.minX)),
-  y:
-    alarmBounds.minY +
-    Math.round(random() * (alarmBounds.maxY - alarmBounds.minY)),
-  lifeTicks: alarmLifeTicks,
-  totalLifeTicks: alarmLifeTicks,
-});
 
 export const createFly = (random = Math.random): Fly => {
   const speed = 0.9 + random() * 1.7;
@@ -303,11 +261,8 @@ export const createGameSeed = (): ActiveGameSeed => ({
   treatSpawnTicksRemaining: treatSpawnTicks,
   treatConsumed: false,
   armed: true,
-  alarm: null,
-  alarmSpawnTicksRemaining: alarmSpawnTicks,
   bee: null,
   beeSpawnTicksRemaining: beeSpawnTicks,
-  stunTicksRemaining: 0,
 });
 
 export const createInitialMeetingState = (): MeetingState => ({
@@ -532,9 +487,6 @@ export const swatFly = (
   if (!state.currentGame) {
     return state;
   }
-  if (state.currentGame.stunTicksRemaining > 0) {
-    return state;
-  }
 
   const flyIndex = state.currentGame.flies.findIndex(
     (fly) => fly.id === targetFlyId
@@ -559,24 +511,22 @@ export const swatFly = (
   };
 };
 
-export const swatAlarm = (state: MeetingState): MeetingState => {
-  if (!state.currentGame || !state.currentGame.alarm) {
-    return state;
-  }
-  if (state.currentGame.stunTicksRemaining > 0) {
+export const swatBee = (state: MeetingState): MeetingState => {
+  if (!state.currentGame || !state.currentGame.bee) {
     return state;
   }
 
   const currentGame = {
     ...state.currentGame,
-    alarm: null,
-    score: state.currentGame.score + alarmHitReward,
+    bee: null,
+    beeSpawnTicksRemaining: beeSpawnTicks,
+    score: state.currentGame.score + beeHitReward,
   };
 
   return {
     ...state,
     currentGame,
-    lastActivityLabel: `警告を消した +${alarmHitReward}`,
+    lastActivityLabel: `黄金のハチを叩いた +${beeHitReward}`,
   };
 };
 
@@ -586,9 +536,6 @@ export const swatTreat = (state: MeetingState): MeetingState => {
     !state.currentGame.treat ||
     state.currentGame.treatConsumed
   ) {
-    return state;
-  }
-  if (state.currentGame.stunTicksRemaining > 0) {
     return state;
   }
 
@@ -640,10 +587,7 @@ export const selectFlyInSwatReach = (
   return selected.id;
 };
 
-export const moveFlies = (
-  state: MeetingState,
-  swatterPos?: SwatPoint
-): MeetingState => {
+export const moveFlies = (state: MeetingState): MeetingState => {
   if (!state.currentGame) {
     return state;
   }
@@ -723,37 +667,9 @@ export const moveFlies = (
     };
   }
 
-  let nextAlarm: Alarm | null = state.currentGame.alarm;
-  let nextAlarmSpawnRemaining = state.currentGame.alarmSpawnTicksRemaining;
-  let nextScore = state.currentGame.score;
-  let alarmExpired = false;
-  let alarmJustSpawned = false;
-
-  if (isBriefing) {
-    nextAlarm = null;
-    nextAlarmSpawnRemaining = alarmSpawnTicks;
-  } else if (nextAlarm) {
-    const remainingLife = nextAlarm.lifeTicks - 1;
-    if (remainingLife <= 0) {
-      nextAlarm = null;
-      nextAlarmSpawnRemaining = alarmSpawnTicks;
-      nextScore = nextScore - alarmMissPenalty;
-      alarmExpired = true;
-    } else {
-      nextAlarm = { ...nextAlarm, lifeTicks: remainingLife };
-    }
-  } else {
-    nextAlarmSpawnRemaining = Math.max(0, nextAlarmSpawnRemaining - 1);
-    if (nextAlarmSpawnRemaining === 0) {
-      nextAlarm = createAlarm();
-      alarmJustSpawned = true;
-    }
-  }
-
+  const nextScore = state.currentGame.score;
   let nextBee: Bee | null = state.currentGame.bee;
   let nextBeeSpawnRemaining = state.currentGame.beeSpawnTicksRemaining;
-  let nextStunTicks = Math.max(0, state.currentGame.stunTicksRemaining - 1);
-  let beeStung = false;
 
   if (isBriefing) {
     nextBee = null;
@@ -772,20 +688,6 @@ export const moveFlies = (
       nextBeeSpawnRemaining = beeSpawnTicks;
     } else {
       nextBee = { ...nextBee, x: movedX, y: movedY };
-
-      if (swatterPos && nextStunTicks === 0) {
-        const distance = Math.hypot(
-          movedX - swatterPos.x,
-          movedY - swatterPos.y
-        );
-        if (distance <= beeHitRadiusPercent) {
-          beeStung = true;
-          nextScore = nextScore - beeStingPenalty;
-          nextStunTicks = beeStunTicks;
-          nextBee = null;
-          nextBeeSpawnRemaining = beeSpawnTicks;
-        }
-      }
     }
   } else {
     nextBeeSpawnRemaining = Math.max(0, nextBeeSpawnRemaining - 1);
@@ -801,11 +703,8 @@ export const moveFlies = (
     graceTicks,
     treat: nextTreat,
     treatSpawnTicksRemaining: nextSpawnRemaining,
-    alarm: nextAlarm,
-    alarmSpawnTicksRemaining: nextAlarmSpawnRemaining,
     bee: nextBee,
     beeSpawnTicksRemaining: nextBeeSpawnRemaining,
-    stunTicksRemaining: nextStunTicks,
     score: nextScore,
   };
 
@@ -814,15 +713,9 @@ export const moveFlies = (
     currentGame,
     lastActivityLabel: isBriefing
       ? 'ハエ叩きの説明中'
-      : beeStung
-        ? `黄金のハチに刺された -${beeStingPenalty}`
-        : alarmExpired
-          ? `警告を見逃した -${alarmMissPenalty}`
-          : alarmJustSpawned
-            ? '警告が出た！'
-            : shouldSpawnTreat
-              ? 'ボーナスが現れた'
-              : state.lastActivityLabel,
+      : shouldSpawnTreat
+        ? 'ボーナスが現れた'
+        : state.lastActivityLabel,
   };
 };
 

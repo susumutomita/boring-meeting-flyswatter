@@ -20,7 +20,7 @@ type SwatterArenaProps = {
   onPointerLeave: () => void;
   onTargetClick: (target: SwatTarget) => void;
   onTreatClick: (point: { x: number; y: number }) => void;
-  onAlarmClick: () => void;
+  onBeeClick: () => void;
   treatBoostPopup: { id: number; x: number; y: number } | null;
 };
 
@@ -37,20 +37,14 @@ export const SwatterArena = ({
   onPointerLeave,
   onTargetClick,
   onTreatClick,
-  onAlarmClick,
+  onBeeClick,
   treatBoostPopup,
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
   const treat = game?.treat ?? null;
   const sponsoredItem = treat ? findSponsoredItem(treat.itemId) : null;
-  const alarm = game?.alarm ?? null;
-  const alarmLifeRatio =
-    alarm && alarm.totalLifeTicks > 0
-      ? Math.max(0, alarm.lifeTicks / alarm.totalLifeTicks)
-      : 0;
   const bee = game?.bee ?? null;
-  const isStunned = (game?.stunTicksRemaining ?? 0) > 0;
 
   return (
     <article className="panel arena-panel game-panel">
@@ -188,51 +182,33 @@ export const SwatterArena = ({
                 </button>
               ) : null}
               {bee ? (
-                <span
-                  aria-hidden="true"
+                <button
+                  aria-label="黄金のハチを叩く"
                   className="golden-bee"
                   key={bee.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onBeeClick();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
                   style={
                     {
                       '--bee-x': `${bee.x}%`,
                       '--bee-y': `${bee.y}%`,
                     } as CSSProperties
                   }
-                >
-                  <span className="golden-bee-wing golden-bee-wing-left" />
-                  <span className="golden-bee-wing golden-bee-wing-right" />
-                  <span className="golden-bee-body" />
-                  <span className="golden-bee-stinger" />
-                </span>
-              ) : null}
-              {isStunned ? (
-                <div className="stun-flash" aria-hidden="true">
-                  <span>STUN</span>
-                </div>
-              ) : null}
-              {alarm ? (
-                <button
-                  aria-label="警告をクリックして消す"
-                  className="alarm-target"
-                  key={alarm.id}
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    onAlarmClick();
-                  }}
-                  onPointerDown={(event) => event.stopPropagation()}
-                  style={
-                    {
-                      '--alarm-x': `${alarm.x}%`,
-                      '--alarm-y': `${alarm.y}%`,
-                      '--alarm-life': alarmLifeRatio.toFixed(3),
-                    } as CSSProperties
-                  }
                   type="button"
                 >
-                  <span className="alarm-ring" aria-hidden="true" />
-                  <span className="alarm-glyph" aria-hidden="true">
-                    🚨
-                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="golden-bee-wing golden-bee-wing-left"
+                  />
+                  <span
+                    aria-hidden="true"
+                    className="golden-bee-wing golden-bee-wing-right"
+                  />
+                  <span aria-hidden="true" className="golden-bee-body" />
+                  <span aria-hidden="true" className="golden-bee-stinger" />
                 </button>
               ) : null}
               {treatBoostPopup ? (
