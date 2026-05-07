@@ -23,6 +23,7 @@ import {
   setProductivityScore,
   startMeeting,
   startSwattingGame,
+  swatAlarm,
   swatFly,
   swatTreat,
   toggleBoredomReason,
@@ -437,6 +438,7 @@ const App = () => {
                     );
                   }, 1100);
                 }}
+                onAlarmClick={() => setState((current) => swatAlarm(current))}
                 treatBoostPopup={treatBoostPopup}
               />
 

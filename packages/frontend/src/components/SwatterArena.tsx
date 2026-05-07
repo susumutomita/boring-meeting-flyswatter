@@ -20,6 +20,7 @@ type SwatterArenaProps = {
   onPointerLeave: () => void;
   onTargetClick: (target: SwatTarget) => void;
   onTreatClick: (point: { x: number; y: number }) => void;
+  onAlarmClick: () => void;
   treatBoostPopup: { id: number; x: number; y: number } | null;
 };
 
@@ -36,12 +37,18 @@ export const SwatterArena = ({
   onPointerLeave,
   onTargetClick,
   onTreatClick,
+  onAlarmClick,
   treatBoostPopup,
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
   const treat = game?.treat ?? null;
   const sponsoredItem = treat ? findSponsoredItem(treat.itemId) : null;
+  const alarm = game?.alarm ?? null;
+  const alarmLifeRatio =
+    alarm && alarm.totalLifeTicks > 0
+      ? Math.max(0, alarm.lifeTicks / alarm.totalLifeTicks)
+      : 0;
 
   return (
     <article className="panel arena-panel game-panel">
@@ -176,6 +183,29 @@ export const SwatterArena = ({
                     ◕‿◕
                   </span>
                   <span className="treat-caption">{sponsoredItem.label}</span>
+                </button>
+              ) : null}
+              {alarm ? (
+                <button
+                  aria-label="警告をクリックして消す"
+                  className="alarm-target"
+                  key={alarm.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    onAlarmClick();
+                  }}
+                  onPointerDown={(event) => event.stopPropagation()}
+                  style={
+                    {
+                      '--alarm-x': `${alarm.x}%`,
+                      '--alarm-y': `${alarm.y}%`,
+                      '--alarm-life': alarmLifeRatio.toFixed(3),
+                    } as CSSProperties
+                  }
+                  type="button"
+                >
+                  <span className="alarm-ring" aria-hidden="true" />
+                  <span className="alarm-glyph">!</span>
                 </button>
               ) : null}
               {treatBoostPopup ? (
