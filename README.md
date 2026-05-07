@@ -2,11 +2,14 @@
 
 # Boring Meeting Flyswatter
 
+**Swat the boredom out of your next meeting.**
 **退屈な会議に、ハエ叩きを 1 回。**
 
-ブラウザだけで会議の沈黙を観測し、最初の退屈ポイントを記録、合間にハエ叩きで 1 度だけ介入する実験プロダクト。
+A browser-only experiment that quietly measures meeting silence, marks the first boredom point, and lets you swat it away — once per meeting. Open the demo, start a meeting, stay quiet for 60 seconds, and a 15-second fly-swatting mini-game pops up.
 
-<img src="./docs/images/concept-poster.png" alt="ハエ叩きゲーム付き会議退屈度メーターの紹介ポスター" width="640" />
+ブラウザだけで動く実験プロダクト。会議の沈黙を計測して「最初に退屈になった瞬間」を残し、その時点で 1 回だけ 15 秒のハエ叩きミニゲームが起動する。
+
+<img src="./docs/images/concept-poster.png" alt="Concept poster for Boring Meeting Flyswatter" width="640" />
 
 [![ci](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml/badge.svg)](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml)
 [![pages](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/pages.yml/badge.svg)](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/pages.yml)
@@ -15,106 +18,85 @@
 ![Vite](https://img.shields.io/badge/bundler-Vite-646cff?logo=vite&logoColor=white)
 ![React 18](https://img.shields.io/badge/ui-React%2018-61dafb?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/types-TypeScript-3178c6?logo=typescript&logoColor=white)
-![Biome](https://img.shields.io/badge/lint-Biome-60a5fa?logo=biome&logoColor=white)
 
-[**ライブデモを開く**](https://susumutomita.github.io/boring-meeting-flyswatter/)
+[**Open the live demo / ライブデモ**](https://susumutomita.github.io/boring-meeting-flyswatter/)
 &nbsp;·&nbsp;
-[コンセプト](#コンセプト)
+[Concept](#concept--コンセプト)
 &nbsp;·&nbsp;
-[機能](#機能)
+[Features](#features--機能)
 &nbsp;·&nbsp;
-[アーキテクチャ](#アーキテクチャ)
+[How it works](#how-it-works--仕組み)
 &nbsp;·&nbsp;
-[セットアップ](#セットアップ)
-&nbsp;·&nbsp;
-[開発](#開発)
+[Setup](#setup--セットアップ)
 
 </div>
 
 ---
 
-## コンセプト
+## Pitch / ピッチ
 
-会議が「退屈になった瞬間」を、誰かの主観ではなくブラウザの計測で残したい。残すだけだと退屈なので、その瞬間にハエ叩きを 1 回だけ走らせて、参加者にちょっとした介入の余白を残す。
+> **EN** — Most meetings have a moment when everyone quietly checks out. We don't capture it, so it doesn't get fixed. Boring Meeting Flyswatter is a browser tab that listens to the silence, freezes the first boredom point, and turns it into a 15-second swatting round you can actually finish — then asks one question: "why was it boring?". The answer is shared with the room over WebRTC, anonymized to a preset tag. No accounts, no recording, no install.
+>
+> **JA** — どの会議にも、全員がすっと興味を失う瞬間がある。それが残らないから改善されない。Boring Meeting Flyswatter はブラウザのタブ 1 つで沈黙を計測し、最初の退屈ポイントを記録、15 秒のハエ叩きミニゲームに変える。最後に「なぜ退屈だった？」をプリセットタグで聞き、ルーム内に WebRTC で共有する。アカウント不要・録音なし・インストールなし。
 
-> 「ビジネス会議で最大の問題は、それがしばしば退屈である、ということだ。」
-> — パトリック・レンシオーニ
+## Concept / コンセプト
 
-<details>
-<summary>ハッカソンで使ったピッチデッキ ( 概要図 )</summary>
+> "The most painful problem in business is also the most unrecognized: meetings are bad."  
+> — Patrick Lencioni, *Death by Meeting*
 
-![会議退屈度メーターのピッチデッキ概要](./docs/images/pitch-deck.png)
+- Boredom is a signal — but nobody logs it.
+- We log it once per meeting, the moment it first happens.
+- Then we make the moment fun, not punishing.
 
-</details>
+- 退屈はシグナル。でも普段は記録されない。
+- 1 ミーティング 1 回、最初に退屈した瞬間だけ記録する。
+- 記録の瞬間を罰ではなく遊びにする。
 
-## 機能
+## Features / 機能
 
-| 機能 | できること |
+| EN | JA |
 | --- | --- |
-| **退屈度メーター** | 沈黙が続くたびに静かに伸びる。発話とキー操作で素早くリセット。 |
-| **ハエ叩き介入 ( 1 ミーティング 1 回 )** | 退屈閾値に達した瞬間、初回の時刻を記録してハエ叩きが起動。連続発火しないので「最初に退屈になった時間」のデータを汚さない。 |
-| **フラペチーノ ボーナス** | 開始 3 秒後に 1 個だけ漂う。叩くと 5 秒間の ` ×2 ` 倍率。何匹かのハエを溜めてから狙うと美味しい。 |
-| **タブ音声 / マイクで沈黙検知** | ` getDisplayMedia ` で会議タブの音声、または ` getUserMedia ` で自分のマイクを RMS 解析。発話を活動として扱う。 |
-| **Document Picture-in-Picture** | 退屈メーターを ipmsg 風の小窓に切り出して常駐。会議画面に被らずに見える ( Chromium 系 ) 。 |
-| **ルームコードでスコア共有** | 同じルームに合流すると、参加者のスコア・ベスト・退屈の理由を WebRTC で同期。会議全体の不満ランキングも見える。 |
-| **退屈の理由は選択肢のみ** | 自由入力なし。漏れても会議特定情報にならない設計。 |
-| **振り返りパネル** | 終了時に初回退屈時刻 / 合計沈黙 / 退屈率 / ハエ叩き結果 / 全員の理由集計 / 経営者の名言を 1 枚で表示。 |
+| **Silence-aware boredom timer** — kicks once after 60s of silence and inactivity. Records `firstBoredomSecond` so the dataset stays clean. | **沈黙監視タイマー** — 沈黙と無操作が 60 秒続くと 1 度だけ起動。「最初に退屈した秒」を残す。 |
+| **15-second swatting mini-game** — flies (+1), Frappuccino bonus (×2 score), golden bee (+10). No penalty paths during play. | **15 秒ハエ叩きミニゲーム** — ハエ +1、フラペチーノ ×2、黄金のハチ +10。プレイ中に減点は無し。 |
+| **Tier-based recap** — Platinum 100+ / Gold 50+ / Bronze 15+ / Rookie. | **称号評価** — プラチナ 100+ / ゴールド 50+ / ブロンズ 15+ / 見習い。 |
+| **Subjective productivity score** — 1–10 slider per peer; the average is shown to the whole room. | **主観評価** — 各人 1〜10 のスライダー、ルーム全員の平均を表示。 |
+| **Why-bored picker** — preset tags only ( `議題が逸れた` / `一方通行` / etc. ); no free text, no PII. | **退屈の理由ピッカー** — プリセット選択のみ。自由入力なし、個人情報なし。 |
+| **WebRTC room sharing** — peers share scores, reasons, productivity score over a PeerJS-brokered DTLS channel. | **ルーム共有** — PeerJS のブローカ経由 ( DTLS ) でスコア / 理由 / 主観評価を同期。 |
+| **Document Picture-in-Picture** — the boredom meter detaches into a small always-on-top window ( Chromium ). | **Document Picture-in-Picture** — メーターを常駐の小窓に分離 ( Chromium 系 )。 |
+| **Browser notification** — when the swatting round arms while you're on another tab. | **ブラウザ通知** — 別タブにいてもハエ叩きが起動するとお知らせ。 |
+| **i18n** — JA / EN / ES / ZH switchable via the top-bar picker; choice is persisted. | **多言語対応** — JA / EN / ES / ZH をトップバーで切替、保存。 |
 
-## アーキテクチャ
+## How it works / 仕組み
 
-### フェーズ遷移
+### Phases / フェーズ遷移
 
 ```mermaid
 stateDiagram-v2
   [*] --> idle
-  idle --> monitoring: ミーティング開始
-  monitoring --> swatting: 沈黙が閾値到達 ( 1 度のみ )
-  swatting --> monitoring: スコア達成 / 時間切れ / ペナルティ上限
-  monitoring --> completed: ミーティング終了
-  swatting --> completed: ミーティング終了
-  completed --> idle: もう一度
+  idle --> monitoring: Start meeting / ミーティング開始
+  monitoring --> swatting: 60s silent ( once / 1 度のみ )
+  swatting --> monitoring: Round ends / 時間切れ
+  monitoring --> completed: End meeting / ミーティング終了
+  swatting --> completed: End meeting / ミーティング終了
+  completed --> idle: Restart / もう一度
 ```
 
-### 退屈の入力ソース
+### Inputs / 入力ソース
 
-| ソース | 取得 API | 範囲 | 備考 |
-| --- | --- | --- | --- |
-| キーボード / ポインター / フォーカス | ` window ` listener | 自分の操作 | デフォルトでオン |
-| タブ音声 | ` getDisplayMedia({ audio: true }) ` | 共有したタブの音 ( 会議全員 ) | 「タブの音声も共有」を ON |
-| マイク | ` getUserMedia({ audio: true }) ` | 自分の発話 | タブ共有が刺さらない環境のフォールバック |
+| Source | API | Scope |
+| --- | --- | --- |
+| Keyboard / pointer / focus | `window` listeners | Local user activity |
+| Microphone | `getUserMedia({ audio: true })` → Web Audio Analyser → RMS | Local user's own voice |
 
-### モジュール構成
+The microphone is enabled automatically when the meeting starts. Tab audio capture was removed because it picks up *other* participants' voices and the boredom signal we want is the local user's silence.
 
-```
-packages/frontend/
-├─ src/
-│  ├─ App.tsx                       # オーケストレーション
-│  ├─ components/
-│  │  ├─ SwatterArena.tsx           # 盤面・ハエ・フラペチーノ・スワッター
-│  │  ├─ MeetingHud.tsx             # サイドバーの枠 ( 子をスタック )
-│  │  ├─ MeetingSummary.tsx         # 振り返り + 名言
-│  │  ├─ ReasonPicker.tsx           # 退屈の理由タグ ( プリセットのみ )
-│  │  ├─ ReasonAggregate.tsx        # ルーム全体の不満ランキング
-│  │  ├─ RoomConnect.tsx            # ルームコード入力
-│  │  ├─ ScoreLeaderboard.tsx       # ピアごとのカード
-│  │  └─ PipMeter.tsx               # PiP の小窓内表示
-│  ├─ hooks/
-│  │  ├─ useMeetingTick.ts          # 1s + 90ms の二重タイマー
-│  │  ├─ useActivityTracking.ts     # キー / ポインター / フォーカス
-│  │  ├─ useStreamSpeechDetector.ts # MediaStream → 解析の共通パイプ
-│  │  ├─ useTabAudioActivity.ts     # getDisplayMedia ラッパ
-│  │  ├─ useMicrophoneActivity.ts   # getUserMedia ラッパ
-│  │  ├─ useDocumentPip.ts          # Document Picture-in-Picture
-│  │  ├─ useScoreShare.ts           # PeerJS ホスト / クライアント切替
-│  │  └─ useSwatter.ts              # スワッター姿勢と命中効果
-│  └─ lib/                          # 純粋関数 + テスト
-│     ├─ meeting.ts                 # 会議状態 / フェーズ / 退屈ロジック
-│     ├─ audio.ts                   # 発話判定 ( RMS / sustain )
-│     ├─ scoreShare.ts              # ルームコード / ランキング / 集計
-│     └─ quotes.ts                  # 名言と決定論的選択
-```
+マイクはミーティング開始で自動 ON。タブ音声検知は他参加者の声まで拾ってしまうため廃止。
 
-## セットアップ
+### Stack / スタック
+
+Bun · Vite · React 18 · TypeScript · Biome · `bun test` · PeerJS · Document Picture-in-Picture API · GitHub Pages.
+
+## Setup / セットアップ
 
 ```bash
 git clone https://github.com/susumutomita/boring-meeting-flyswatter
@@ -123,47 +105,48 @@ bun install
 bun run dev   # http://localhost:5173/
 ```
 
-> Bun 1.x が必要。Windows でも Chromium 系ブラウザがあれば同等に動作する。
+Requires Bun 1.x. Works in any modern Chromium-based browser ( Picture-in-Picture requires Chromium ).
 
-## 開発
+Bun 1.x が必要。Document Picture-in-Picture は Chromium 系のみ。
 
-| コマンド | やること |
+## Development / 開発
+
+| Command | Purpose |
 | --- | --- |
-| ` make dev ` | 開発サーバ |
-| ` make lint ` | Biome チェック |
-| ` make format ` | Biome フォーマット |
-| ` make typecheck ` | ` tsc --noEmit ` |
-| ` make test ` | ` bun test ` ( BDD / 日本語タイトル ) |
-| ` make build ` | プロダクションビルド |
-| ` make before-commit ` | textlint + lint + typecheck + test + build を一括 |
+| `make dev` | Dev server / 開発サーバ |
+| `make lint` | Biome check |
+| `make format` | Biome format |
+| `make typecheck` | `tsc --noEmit` |
+| `make test` | `bun test` ( BDD, JP titles ) |
+| `make build` | Production build |
+| `make before-commit` | textlint + lint + typecheck + test + build |
 
-### コーディング規約
+### Conventions / 規約
 
-- ドメインロジックは ` lib/ ` 配下の純粋関数として TDD で書く ( 実 API / DB / IO を使い、モック禁止 ) 。
-- テストは BDD スタイル + 日本語タイトル。 ` describe ` / ` it ` の本文を「〜であるべき」で締める。
-- フックの ` onSpeech ` などコールバックは ` useRef ` 経由で渡し、リスナー再登録を避ける。
-- 詳細は [CLAUDE.md](./CLAUDE.md) を参照。
+- Domain logic lives in `packages/frontend/src/lib/` as pure, TDD'd functions ( real I/O, no mocks ).
+- Tests are BDD-style with Japanese titles ending in「〜であるべき」.
+- Hook callbacks ( `onSpeech`, `onError`, etc. ) are passed through `useRef` to avoid re-registering listeners.
+- Full project guidance lives in [CLAUDE.md](./CLAUDE.md).
 
-## 既知の制約
+## Known limits / 既知の制約
 
-| 領域 | 内容 |
+| Area | Note |
 | --- | --- |
-| **Document Picture-in-Picture** | Chromium 系のみ ( Chrome / Edge / Arc ) 。Safari / Firefox はタブ内表示にフォールバック。 |
-| **デスクトップ会議アプリ** | Zoom / Teams / Meet のデスクトップ版は OS のシステム音声共有が必要なため対象外。ブラウザ版を共有してもらう前提。 |
-| **ルームコード** | PeerJS の公開ブローカ ( ` 0.peerjs.com ` ) を使用。コードを推測されると同じルームに第三者が参加できる。WebRTC ( DTLS ) で通信は暗号化されているが、ブローカには到達ログが残る。 |
-| **完全 LAN モード** | ` packages/backend ` に Hono の自前シグナリングを置くオプションを検討中 ( 別 PR ) 。 |
+| Document Picture-in-Picture | Chromium-only ( Chrome / Edge / Arc ). Safari / Firefox fall back to in-tab display. |
+| Desktop meeting apps | Zoom / Teams / Meet desktop clients require OS-level system-audio sharing — out of scope. Use the browser version. |
+| Room codes | PeerJS public broker ( `0.peerjs.com` ). DTLS encrypts traffic, but the broker sees connection metadata. |
 
-## ロードマップ
+## Roadmap / ロードマップ
 
-- [ ] 自前 Hono シグナリングサーバ ( 同 LAN のみ接続できる真の LAN モード )
-- [ ] カメラ在席検知 ( フレーム差分 / FaceDetector )
-- [ ] ミーティング履歴 ( ローカル保存 ) と退屈傾向の集計
-- [ ] 招待 URL 短縮 / QR
+- [ ] Self-hosted Hono signaling server for true LAN-only mode.
+- [ ] Camera-presence detection ( frame diff / FaceDetector API ).
+- [ ] Local meeting history with boredom-trend rollups.
+- [ ] Translate the recap screen and the meeting tips ( currently the recap stays JA ).
 
-## コントリビュート
+## Contributing / コントリビュート
 
-バグ・改善案は Issue へ。PR は ` make before-commit ` を Green にした上で Conventional Commits に近い書き方で。仕様書は ` docs/specs/ ` に追記してから実装すると流れがスムーズ。
+Issues for bugs and ideas welcome. PRs should pass `make before-commit` and follow Conventional Commits. Add a spec note under `docs/specs/` before non-trivial implementation.
 
-## ライセンス
+## License / ライセンス
 
 [MIT](./LICENSE)
