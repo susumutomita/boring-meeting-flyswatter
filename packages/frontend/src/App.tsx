@@ -17,6 +17,7 @@ import {
   createGameSeed,
   createInitialMeetingState,
   endMeeting,
+  gameDurationSeconds,
   moveFlies,
   registerActivity,
   selectSwattingFeedback,
@@ -453,8 +454,8 @@ const App = () => {
                       ハエ叩き、開始しますか？
                     </h2>
                     <p className="swat-armed-body">
-                      会議が 60 秒静まりました。クリックすると 30
-                      秒のハエ叩きが始まります。
+                      会議が 60 秒静まりました。クリックすると{' '}
+                      {gameDurationSeconds} 秒のハエ叩きが始まります。
                     </p>
                     <button
                       className="action action-primary swat-armed-action"

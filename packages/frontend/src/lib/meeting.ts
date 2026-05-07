@@ -1,7 +1,7 @@
 import { pickSponsoredItem } from './sponsoredItems';
 
 export const boredomThresholdSeconds = 60;
-export const gameDurationSeconds = 25;
+export const gameDurationSeconds = 15;
 export const flyCount = 6;
 export const counterThresholdTicks = 36;
 export const targetScore = 10;
