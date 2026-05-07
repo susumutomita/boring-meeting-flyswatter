@@ -50,6 +50,7 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
   treat: null,
   treatSpawnTicksRemaining: 0,
   treatConsumed: false,
+  armed: false,
 });
 
 describe('会議退屈度ロジック', () => {
