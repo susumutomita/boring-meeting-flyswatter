@@ -408,11 +408,23 @@ const App = () => {
                       : '生産的な会議のコツ'
                 }
                 idleValue={
-                  isIdle
-                    ? 'ミーティング開始'
-                    : state.boredomGameTriggered
-                      ? '終了で振り返り'
-                      : meetingTip
+                  isIdle ? (
+                    'ミーティング開始'
+                  ) : state.boredomGameTriggered ? (
+                    '終了で振り返り'
+                  ) : (
+                    <span className="meeting-tip">
+                      <span className="meeting-tip-practice">
+                        {meetingTip.practice}
+                      </span>
+                      <span className="meeting-tip-body">
+                        {meetingTip.body}
+                      </span>
+                      <span className="meeting-tip-source">
+                        出典: {meetingTip.source}
+                      </span>
+                    </span>
+                  )
                 }
                 onPointerDown={handlePointerDown}
                 onPointerMove={handlePointerMove}

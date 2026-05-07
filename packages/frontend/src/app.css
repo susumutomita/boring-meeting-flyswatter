@@ -284,6 +284,41 @@ button {
   text-align: center;
 }
 
+.arena-idle .meeting-tip {
+  display: grid;
+  gap: 12px;
+  max-width: min(680px, 92%);
+  padding: 18px 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.92);
+  text-align: left;
+  font-family: "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.arena-idle .meeting-tip-practice {
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: clamp(1.2rem, 2.4vw, 1.8rem);
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  font-weight: 400;
+}
+
+.arena-idle .meeting-tip-body {
+  font-size: 0.96rem;
+  line-height: 1.55;
+  color: rgba(24, 25, 27, 0.78);
+  font-weight: 400;
+}
+
+.arena-idle .meeting-tip-source {
+  font-family: "VT323", "Departure Mono", "Courier New", monospace;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  color: rgba(24, 25, 27, 0.55);
+  font-weight: 400;
+}
+
 .arena-score {
   position: absolute;
   top: 12px;
