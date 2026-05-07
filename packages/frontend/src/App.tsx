@@ -84,12 +84,7 @@ const App = () => {
   );
   const [isShareJoined, setIsShareJoined] = useState(false);
   const [bestScore, setBestScore] = useState(0);
-  const [tipSeed, setTipSeed] = useState(() => Date.now());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setTipSeed(Date.now()), 8000);
-    return () => window.clearInterval(id);
-  }, []);
+  const [tipSeed] = useState(() => Date.now());
 
   const isSwatArmed = state.currentGame?.armed === true;
   const meetingTip = pickMeetingTip(tipSeed);
