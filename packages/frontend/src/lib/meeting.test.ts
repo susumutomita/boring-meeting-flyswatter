@@ -2,11 +2,14 @@ import { describe, expect, it } from 'bun:test';
 import {
   type ActiveGameSeed,
   type Alarm,
+  type Bee,
   type Fly,
   advanceMeeting,
   alarmHitReward,
   alarmLifeTicks,
   alarmMissPenalty,
+  beeStingPenalty,
+  beeStunTicks,
   boredomThresholdSeconds,
   counterThresholdTicks,
   createFly,
@@ -58,6 +61,9 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
   armed: false,
   alarm: null,
   alarmSpawnTicksRemaining: 1000,
+  bee: null,
+  beeSpawnTicksRemaining: 1000,
+  stunTicksRemaining: 0,
 });
 
 describe('会議退屈度ロジック', () => {
@@ -440,6 +446,61 @@ describe('会議退屈度ロジック', () => {
 
     expect(afterTick.currentGame?.alarm).toBeNull();
     expect(afterTick.currentGame?.score).toBe(30 - alarmMissPenalty);
+  });
+
+  it('黄金のハチに触れるとスコアが -20 でスタンに入るべき', () => {
+    const bee: Bee = {
+      id: 1,
+      x: 50,
+      y: 50,
+      velocityX: 0,
+      velocityY: 0,
+    };
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(0),
+        atSecond: boredomThresholdSeconds,
+        score: 30,
+        bee,
+        beeSpawnTicksRemaining: 1000,
+      },
+    };
+
+    const afterTick = moveFlies(state, { x: 50, y: 50 });
+
+    expect(afterTick.currentGame?.bee).toBeNull();
+    expect(afterTick.currentGame?.score).toBe(30 - beeStingPenalty);
+    expect(afterTick.currentGame?.stunTicksRemaining).toBe(beeStunTicks);
+  });
+
+  it('スタン中はハエもアラートも叩けないべき', () => {
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(0),
+        atSecond: boredomThresholdSeconds,
+        score: 5,
+        flies: [createFlyFixture(101)],
+        alarm: {
+          id: 9,
+          x: 30,
+          y: 30,
+          lifeTicks: 5,
+          totalLifeTicks: alarmLifeTicks,
+        },
+        stunTicksRemaining: 5,
+      },
+    };
+
+    const afterFlySwat = swatFly(state, 101, () => createFlyFixture(202));
+    expect(afterFlySwat.currentGame?.score).toBe(5);
+
+    const afterAlarmSwat = swatAlarm(state);
+    expect(afterAlarmSwat.currentGame?.score).toBe(5);
+    expect(afterAlarmSwat.currentGame?.alarm).not.toBeNull();
   });
 
   it('ミーティング終了で完了フェーズに移り終了時刻を記録するべき', () => {

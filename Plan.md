@@ -188,3 +188,33 @@
 - treat と同じ 90ms tick に乗せ、寿命 17 ticks ≒ 1.5 秒で表現できた。新たなタイマーを足さず、既存の `moveFlies` を素直に拡張するだけで足りた。
 - Biome は `let alarmId = 0` を初期化のみで mutation が見えない瞬間に `const` へ書き換える。同じ編集で `nextAlarmId` まで一緒に入れて mutation を可視化する必要がある。
 - moveFlies の責務が膨らんでいる ( hit / miss / spawn ロジックが複数 ) のは少し気になる。次に手を入れるときに小さな関数へ分割したい。
+
+### 黄金のハチ ( 邪魔キャラ ) - 2026-05-07
+
+目的:
+- アラートに加えて空間的な「踏まないように動かす」プレッシャーを足す。スワッターが目の前を通った瞬間に -20 + 1 秒スタンで、ハエを追う動きを縛る。
+
+制約:
+- 弾道や即ゲームオーバーは入れない ( 15 秒ゲームのテンポを潰さない )。
+- 衝突判定は既存の 90ms tick で十分。pointer event 単位までは要らない。
+
+タスク:
+- [completed] `Bee` 型と `bee`, `beeSpawnTicksRemaining`, `stunTicksRemaining` を `ActiveGameSeed` に追加。
+- [completed] `createBee` で画面外から反対側へ向かう線形軌道を生成。
+- [completed] `moveFlies(state, swatterPos?)` で位置更新 + スワッター衝突判定 + スタン進行。
+- [completed] `swatFly` / `swatTreat` / `swatAlarm` をスタン中は no-op に。
+- [completed] App.tsx で swatter pose を ref に逐次反映、tick で渡す。
+- [completed] アリーナにハチ ( 黄黒の縞ボディ + 透明翼 ) と STUN フラッシュを描画。
+- [completed] meeting.test に「ハチに触れたら -20 + スタン」「スタン中は何も叩けない」の 2 ケース追加。
+
+検証手順:
+- nr lint / nr typecheck / nr test ( 57 / 57 ) / nr build
+- ブラウザで 15 秒ラウンド中、画面端から黄色いハチが横切ること、スワッターを近づけると STUN フラッシュ + スコアが -20 されること、その間は反応しないこと。
+
+進捗ログ:
+- 2026-05-07 JST: スリム版仕様確定 ( -20 / 1 秒スタン / 弾なし / 6 秒間隔 )。
+- 2026-05-07 JST: 実装 + テスト Green。
+
+振り返り:
+- 衝突判定を 90ms tick に閉じ込めた割に、swatter pose を ref で渡すだけで十分滑らかに当たる。pointer event ごとに判定する必要は無かった。
+- スタンを `swatFly` 等の reducer で no-op にするだけで「叩けない」体験が成立する。UI 側に状態を増やさなくて済んだのが良い。

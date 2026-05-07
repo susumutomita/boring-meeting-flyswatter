@@ -88,6 +88,7 @@ const App = () => {
 
   const isSwatArmed = state.currentGame?.armed === true;
   const meetingTip = pickMeetingTip(tipSeed);
+  const swatterPoseRef = useRef({ x: 52, y: 58 });
   const [treatBoostPopup, setTreatBoostPopup] = useState<{
     id: number;
     x: number;
@@ -118,7 +119,8 @@ const App = () => {
     isSwatting,
     onSecondTick: () =>
       setState((current) => advanceMeeting(current, createGameSeed)),
-    onFlyTick: () => setState((current) => moveFlies(current)),
+    onFlyTick: () =>
+      setState((current) => moveFlies(current, swatterPoseRef.current)),
   });
 
   useActivityTracking({
@@ -189,6 +191,10 @@ const App = () => {
       }, 1100);
     },
   });
+
+  useEffect(() => {
+    swatterPoseRef.current = { x: swatter.x, y: swatter.y };
+  }, [swatter.x, swatter.y]);
 
   useEffect(() => {
     const currentScore = state.currentGame?.score ?? 0;
