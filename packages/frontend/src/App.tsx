@@ -342,6 +342,15 @@ const App = () => {
           </output>
         ) : null}
 
+        {isRunning && audioSource === 'off' ? (
+          <output className="pip-hint pip-hint-audio-off">
+            音声検知 OFF のままだと、他の人が話していても自分のキーボード操作が
+            60
+            秒なければハエ叩きが起動します。会議全体の沈黙で測りたい場合は右上から
+            「タブ音声で検知」に切り替えてください。
+          </output>
+        ) : null}
+
         <section className="play-stage">
           {isCompleted ? (
             <MeetingSummary
