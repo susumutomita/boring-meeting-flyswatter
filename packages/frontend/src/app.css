@@ -585,11 +585,20 @@ button {
 
 .alarm-glyph {
   position: relative;
-  font-family: "Impact", "Haettenschweiler", sans-serif;
   font-size: 2.4rem;
-  color: #d11a2a;
   line-height: 1;
   z-index: 1;
+  animation: alarm-shake 0.3s ease-in-out infinite alternate;
+  filter: drop-shadow(0 0 6px rgba(255, 60, 60, 0.8));
+}
+
+@keyframes alarm-shake {
+  from {
+    transform: rotate(-14deg) scale(1);
+  }
+  to {
+    transform: rotate(14deg) scale(1.12);
+  }
 }
 
 .alarm-target:hover .alarm-ring {

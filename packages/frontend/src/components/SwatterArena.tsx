@@ -230,7 +230,9 @@ export const SwatterArena = ({
                   type="button"
                 >
                   <span className="alarm-ring" aria-hidden="true" />
-                  <span className="alarm-glyph">!</span>
+                  <span className="alarm-glyph" aria-hidden="true">
+                    🚨
+                  </span>
                 </button>
               ) : null}
               {treatBoostPopup ? (
