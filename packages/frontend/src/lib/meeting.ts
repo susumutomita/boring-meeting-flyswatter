@@ -1,7 +1,7 @@
 import { pickSponsoredItem } from './sponsoredItems';
 
 export const boredomThresholdSeconds = 60;
-export const gameDurationSeconds = 30;
+export const gameDurationSeconds = 25;
 export const flyCount = 6;
 export const counterThresholdTicks = 36;
 export const targetScore = 10;
@@ -16,13 +16,13 @@ export const productivityScoreMax = 10;
 export type SwatTier = 'platinum' | 'gold' | 'bronze' | 'rookie';
 
 export const swatTier = (score: number): SwatTier => {
-  if (score >= 9) {
+  if (score >= 100) {
     return 'platinum';
   }
-  if (score >= 6) {
+  if (score >= 50) {
     return 'gold';
   }
-  if (score >= 1) {
+  if (score >= 15) {
     return 'bronze';
   }
   return 'rookie';

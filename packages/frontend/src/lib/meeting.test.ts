@@ -421,12 +421,13 @@ describe('会議退屈度ロジック', () => {
 
   it('ハエ叩きスコアの称号はしきい値で切り替わるべき', () => {
     expect(swatTier(0)).toBe('rookie');
-    expect(swatTier(1)).toBe('bronze');
-    expect(swatTier(5)).toBe('bronze');
-    expect(swatTier(6)).toBe('gold');
-    expect(swatTier(8)).toBe('gold');
-    expect(swatTier(9)).toBe('platinum');
-    expect(swatTier(20)).toBe('platinum');
+    expect(swatTier(14)).toBe('rookie');
+    expect(swatTier(15)).toBe('bronze');
+    expect(swatTier(49)).toBe('bronze');
+    expect(swatTier(50)).toBe('gold');
+    expect(swatTier(99)).toBe('gold');
+    expect(swatTier(100)).toBe('platinum');
+    expect(swatTier(250)).toBe('platinum');
   });
 
   it('生産性スコアは完了フェーズでのみ 1 〜 10 にクランプされて反映されるべき', () => {
