@@ -13,7 +13,7 @@ type SwatterArenaProps = {
   swatter: SwatterPose;
   knockedFlyIds: Set<number>;
   idleLabel: string;
-  idleValue: string | number;
+  idleValue: import('react').ReactNode;
   onPointerDown: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerMove: (event: ReactPointerEvent<HTMLDivElement>) => void;
   onPointerEnter: () => void;
