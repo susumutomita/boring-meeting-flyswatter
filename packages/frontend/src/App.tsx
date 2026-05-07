@@ -69,11 +69,8 @@ const ensureSelfPeerId = (): string => {
   return generated;
 };
 
-type AudioSource = 'off' | 'mic';
-
 const App = () => {
   const [state, setState] = useState(createInitialMeetingState);
-  const [audioSource, setAudioSource] = useState<AudioSource>('off');
   const [audioError, setAudioError] = useState<string | null>(null);
   const [roomCodeInput, setRoomCodeInput] = useState(() =>
     readPersisted('bmf:room-code', '')
@@ -135,22 +132,16 @@ const App = () => {
     setState((current) => registerActivity(current, '発話を検知'));
   const handleAudioError = (error: Error) => {
     setAudioError(error.message);
-    setAudioSource('off');
-  };
-  const handleCaptureEnd = () => {
-    setAudioSource('off');
   };
 
   const micAudio = useMicrophoneActivity({
-    enabled: audioSource === 'mic' && isRunning,
+    enabled: isRunning && !audioError,
     onSpeech: handleSpeech,
     onError: handleAudioError,
-    onCaptureEnd: handleCaptureEnd,
   });
 
   const isCapturing = micAudio.isCapturing;
-  const levelDb =
-    audioSource === 'mic' ? micAudio.levelDb : Number.NEGATIVE_INFINITY;
+  const levelDb = micAudio.levelDb;
 
   const {
     swatter,
@@ -235,11 +226,10 @@ const App = () => {
   });
 
   useEffect(() => {
-    if (audioSource === 'off') {
-      return;
+    if (!isRunning) {
+      setAudioError(null);
     }
-    setAudioError(null);
-  }, [audioSource]);
+  }, [isRunning]);
 
   const primaryButton = isIdle
     ? {
@@ -254,15 +244,6 @@ const App = () => {
           onClick: () => setState((current) => endMeeting(current)),
           primary: false,
         };
-
-  const toggleAudioSource = () => {
-    setAudioSource((current) => (current === 'mic' ? 'off' : 'mic'));
-  };
-
-  const audioSourceLabel: Record<AudioSource, string> = {
-    off: 'マイク検知 オフ',
-    mic: 'マイク検知 オン',
-  };
 
   const handleToastClick = () => {
     window.focus();
@@ -283,16 +264,6 @@ const App = () => {
       <main className="game-board">
         <header className="game-topbar">
           <div className="top-actions" data-no-activity-capture="true">
-            {isRunning ? (
-              <button
-                className={`action ${audioSource !== 'off' ? 'action-primary' : ''}`}
-                onClick={toggleAudioSource}
-                title="クリックでマイク検知をオン / オフ"
-                type="button"
-              >
-                {audioSourceLabel[audioSource]}
-              </button>
-            ) : null}
             {primaryButton ? (
               <button
                 className={`action ${primaryButton.primary ? 'action-primary' : ''}`}
@@ -311,21 +282,7 @@ const App = () => {
             <div className="audio-error-actions">
               <button
                 className="action"
-                onClick={() => {
-                  setAudioError(null);
-                  setAudioSource('off');
-                  window.requestAnimationFrame(() => setAudioSource('mic'));
-                }}
-                type="button"
-              >
-                マイクで再試行
-              </button>
-              <button
-                className="action"
-                onClick={() => {
-                  setAudioError(null);
-                  setAudioSource('off');
-                }}
+                onClick={() => setAudioError(null)}
                 type="button"
               >
                 閉じる
