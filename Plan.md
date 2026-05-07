@@ -159,7 +159,13 @@
 - 位置追従とアニメを同じ要素に乗せると、アニメ再起動のたびに transition がリセットされて視覚的にカクつく。役割を別要素に分けるのが要点。
 - `steps()` は意図的にコマ送りに見せたいときだけ使う。スイングのような連続的な動きには不向き。
 
-### 邪魔オブジェクト ( アラート ) - 2026-05-07
+### 邪魔オブジェクト ( アラート ) 検討メモ - 2026-05-07
+
+提出前補正:
+- このセクションは実装候補の検討メモとして残す。
+- 現在の `main` には `Alarm` 型、赤い警告、`swatAlarm`、放置時 -15 点の仕様は含まれていない。
+- 提出時の正しい製品仕様は README の通り、通常のハエ +1、フラペチーノのスコア 2 倍、黄金のハチ +10 である。
+- 審査・申込ではこのセクションを完成済み機能として主張しない。
 
 目的:
 - ハエ叩き中の「ぼーっとしたまま叩き続ける」を防ぐ。突発的に出る赤い警告を 1.5 秒以内にクリックさせ、瞬発反応を要求する。
@@ -170,51 +176,88 @@
 - ライフタイム ≒ 1.5 秒 ( = 17 ticks )、再出現間隔 ≒ 3 秒 ( = 33 ticks )。 treatSpawnTicks に揃える。
 
 タスク:
-- [completed] `Alarm` 型と `currentGame.alarm`, `alarmSpawnTicksRemaining` を追加。
-- [completed] `moveFlies` でスポーン / 寿命減算 / 期限切れ -15 点を実装。
-- [completed] `swatAlarm` リデューサーで +10 点 / クリア。
-- [completed] 描画用ボタン + 残り寿命のリングアニメを追加。
-- [completed] meeting.test に出現 / 期限切れ / クリックの 3 ケース。
+- [not planned] `Alarm` 型と `currentGame.alarm`, `alarmSpawnTicksRemaining` を追加する案を検討した。
+- [not planned] `moveFlies` でスポーン / 寿命減算 / 期限切れ -15 点を実装する案を検討した。
+- [not planned] `swatAlarm` リデューサーで +10 点 / クリアする案を検討した。
+- [not planned] 描画用ボタン + 残り寿命のリングアニメを追加する案を検討した。
+- [not planned] meeting.test に出現 / 期限切れ / クリックの 3 ケースを追加する案を検討した。
 
 検証手順:
-- nr lint / nr typecheck / nr test / nr build
-- ブラウザで 15 秒のハエ叩き中に赤い ! が複数回出ること、クリックで +10、放置で -15 になること。
+- 未採用案のため提出版 MVP の検証対象には含めない。
+- 現在仕様の検証は、通常ハエ +1、フラペチーノのスコア 2 倍、黄金のハチ +10 を対象にする。
 
 進捗ログ:
-- 2026-05-07 JST: 仕様確定 ( クリック +10、放置 -15、1.5 秒 deadline、3 秒間隔 )。
-- 2026-05-07 JST: ロジック / UI / テスト ( 55 / 55 ) 完了。
+- 2026-05-07 JST: 仕様案を検討したが、提出版 MVP では未採用とした。
+- 2026-05-07 JST: 提出前整合性確認で、現在の `main` に存在しない仕様として補正した。
 
 振り返り:
-- treat と同じ 90ms tick に乗せ、寿命 17 ticks ≒ 1.5 秒で表現できた。新たなタイマーを足さず、既存の `moveFlies` を素直に拡張するだけで足りた。
-- Biome は `let alarmId = 0` を初期化のみで mutation が見えない瞬間に `const` へ書き換える。同じ編集で `nextAlarmId` まで一緒に入れて mutation を可視化する必要がある。
-- moveFlies の責務が膨らんでいる ( hit / miss / spawn ロジックが複数 ) のは少し気になる。次に手を入れるときに小さな関数へ分割したい。
+- 突発アラートは瞬発反応を作れるが、15 秒の短い提出版 MVP では説明コストとペナルティの重さが勝つため採用しない。
+- 次に同種の障害物を検討する場合は、README、Plan.md、`meeting.ts`、`meeting.test.ts` の 4 点を同じ PR で揃える必要がある。
+- `moveFlies` の責務が膨らんでいるため、次にゲーム要素を足す前に小さな関数へ分割したい。
 
-### 黄金のハチ ( 邪魔キャラ ) - 2026-05-07
+### 黄金のハチ ( ボーナスキャラ ) - 2026-05-07
+
+提出前補正:
+- 現在の `main` で採用されている仕様は、黄金のハチをクリックすると +10 点で消えるボーナスキャラである。
+- `-20`、`1 秒スタン`、`stunTicksRemaining`、スワッター接触判定は現在の `main` には含まれていない。
+- README と `meeting.ts` / `meeting.test.ts` の現在仕様を正とする。
 
 目的:
-- アラートに加えて空間的な「踏まないように動かす」プレッシャーを足す。スワッターが目の前を通った瞬間に -20 + 1 秒スタンで、ハエを追う動きを縛る。
+- 空間的に動くボーナス対象を追加し、短い 15 秒ラウンドの中に通常ハエとは違う高得点の狙い所を作る。
 
 制約:
 - 弾道や即ゲームオーバーは入れない ( 15 秒ゲームのテンポを潰さない )。
-- 衝突判定は既存の 90ms tick で十分。pointer event 単位までは要らない。
+- ペナルティやスタンは入れず、提出版 MVP では加点の気持ちよさを優先する。
 
 タスク:
-- [completed] `Bee` 型と `bee`, `beeSpawnTicksRemaining`, `stunTicksRemaining` を `ActiveGameSeed` に追加。
+- [completed] `Bee` 型と `bee`, `beeSpawnTicksRemaining` を `ActiveGameSeed` に追加。
 - [completed] `createBee` で画面外から反対側へ向かう線形軌道を生成。
-- [completed] `moveFlies(state, swatterPos?)` で位置更新 + スワッター衝突判定 + スタン進行。
-- [completed] `swatFly` / `swatTreat` / `swatAlarm` をスタン中は no-op に。
-- [completed] App.tsx で swatter pose を ref に逐次反映、tick で渡す。
-- [completed] アリーナにハチ ( 黄黒の縞ボディ + 透明翼 ) と STUN フラッシュを描画。
-- [completed] meeting.test に「ハチに触れたら -20 + スタン」「スタン中は何も叩けない」の 2 ケース追加。
+- [completed] `moveFlies` で位置更新と再出現間隔を処理。
+- [completed] `swatBee` リデューサーで +10 点 / クリアを実装。
+- [completed] アリーナに黄金のハチ ( 黄黒の縞ボディ + 透明翼 ) を描画。
+- [completed] meeting.test に「黄金のハチをクリックすると +10 点で消えるべき」を追加。
 
 検証手順:
 - nr lint / nr typecheck / nr test ( 57 / 57 ) / nr build
-- ブラウザで 15 秒ラウンド中、画面端から黄色いハチが横切ること、スワッターを近づけると STUN フラッシュ + スコアが -20 されること、その間は反応しないこと。
+- ブラウザで 15 秒ラウンド中、画面端から黄色いハチが横切ること、クリックで +10 されて消えること。
 
 進捗ログ:
-- 2026-05-07 JST: スリム版仕様確定 ( -20 / 1 秒スタン / 弾なし / 6 秒間隔 )。
+- 2026-05-07 JST: スリム版仕様をボーナスキャラとして確定 ( +10 / 弾なし / ペナルティなし / 6 秒間隔 )。
 - 2026-05-07 JST: 実装 + テスト Green。
+- 2026-05-07 JST: 提出前整合性確認で、ペナルティ / スタン案は現在仕様ではないことを明示した。
 
 振り返り:
-- 衝突判定を 90ms tick に閉じ込めた割に、swatter pose を ref で渡すだけで十分滑らかに当たる。pointer event ごとに判定する必要は無かった。
-- スタンを `swatFly` 等の reducer で no-op にするだけで「叩けない」体験が成立する。UI 側に状態を増やさなくて済んだのが良い。
+- ペナルティやスタンを入れると短い 15 秒ラウンドのテンポが重くなる。提出版では README と一致する「叩くと嬉しい高得点ボーナス」に絞った。
+- ハチをボーナスとして扱うことで、減点無しの軽いゲーム体験を維持できる。
+
+### AI-DLC 提出前フォローアップ - 2026-05-07
+
+目的:
+- AI-DLC Inception 文書を追加した後に残った提出前リスクを潰し、審査で読まれても実装・運用・文書の主張が矛盾しない状態にする。
+
+制約:
+- Runtime の MVP 挙動は変えない。
+- `aidlc-docs/` は brownfield Inception として正直に扱う。
+- 申込前の品質向上に集中し、依存追加を伴う大きなテスト基盤変更は避ける。
+
+タスク:
+- [completed] `Plan.md` のアラート / ハチ仕様の drift を補正する。
+- [completed] Browser-only / PeerJS / Document Picture-in-Picture / Bun + Vite / coverage 方針の ADR を追加する。
+- [completed] `CLAUDE.md` の coverage 方針を現実の品質ゲートと一致させる。
+- [completed] ブラウザ smoke test の手順と実施ログを追加する。
+- [completed] `aidlc-docs` の Known Follow-Up Items を提出前完了状態へ更新する。
+
+検証手順:
+- `make format_check`
+- `make before-commit`
+- browser smoke test の実施ログ確認。
+
+進捗ログ:
+- 2026-05-07 JST: `Plan.md` の未採用アラート案と現在の黄金のハチ仕様を明確化した。
+- 2026-05-07 JST: ADR を追加し、主要な設計判断の証跡を `docs/adr/` に置いた。
+- 2026-05-07 JST: coverage 100% を全体 gate と誤解されないよう、純粋ドメインロジック中心の運用へ整理した。
+- 2026-05-07 JST: 提出用 smoke test 手順と結果を追加した。
+
+振り返り:
+- MVP の完成度より、提出時は「何を主張しているか」と「リポジトリの証跡が一致しているか」が重要になる。
+- AI-DLC 文書は実装後に整備していても、brownfield と明記すれば審査資料として十分に筋が通る。

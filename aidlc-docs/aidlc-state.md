@@ -9,7 +9,7 @@
 | Primary Stack | Bun, Vite, React 18, TypeScript, PeerJS, GitHub Pages |
 | Workflow Mode | Inception documentation completion for an already implemented MVP |
 | Started At | 2026-05-07T22:18:08+09:00 |
-| Last Updated At | 2026-05-07T22:18:08+09:00 |
+| Last Updated At | 2026-05-07T22:37:43+09:00 |
 | Current Phase | Inception |
 | Current Status | Inception completed |
 
@@ -60,9 +60,16 @@ Boring Meeting Flyswatter records the first moment when a meeting becomes silent
 - [x] Unit dependencies and story mapping are documented.
 - [x] Audit trail records the documentation pass.
 
-## Known Follow-Up Items
+## Submission Follow-Up Resolution
 
-- Reconcile `Plan.md` entries for alarm and bee behavior with the current implementation before using those entries as product claims.
-- Decide whether the `CLAUDE.md` 100% coverage rule is a strict gate or an aspirational target, because current line coverage is below 100%.
-- Add ADRs for browser-only architecture, PeerJS room sharing, Document Picture-in-Picture, and Bun/Vite tooling.
-- Add browser smoke tests for the end-to-end demo path.
+| Item | Status | Artifact |
+| --- | --- | --- |
+| Reconcile `Plan.md` entries for alarm and bee behavior with current implementation. | Completed | `Plan.md` now marks the alarm section as an unshipped consideration and documents the golden bee as a +10 bonus character. |
+| Decide coverage policy. | Completed | `CLAUDE.md` and `docs/adr/0005-test-coverage-policy.md` document domain-focused coverage policy. |
+| Add ADRs for key architecture decisions. | Completed | `docs/adr/0001-browser-only-static-mvp.md` through `docs/adr/0005-test-coverage-policy.md`. |
+| Add browser smoke test evidence. | Completed | `docs/smoke/browser-smoke-checklist.md` and `docs/smoke/2026-05-07-browser-smoke.md`. |
+
+## Remaining Non-Blocking Notes
+
+- `meeting.ts` remains a large domain module and should be split before adding another gameplay mechanic.
+- `useTabAudioActivity.ts` remains unused by the current app and can be removed or reintroduced intentionally in a future cleanup.

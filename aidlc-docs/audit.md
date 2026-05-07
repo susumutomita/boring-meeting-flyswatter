@@ -46,3 +46,23 @@ Before this documentation pass, the repository quality gate had been run locally
 - `make before-commit` passed.
 - `bun run test:coverage` passed, with coverage below the repository's stated 100% target.
 - Working tree was clean before `aidlc-docs/` was added.
+
+## 2026-05-07T22:37:43+09:00
+
+### User Input
+
+Raw user request: `潰してください`。
+
+### AI Action
+
+Resolved the known follow-up items identified after AI-DLC Inception documentation was merged:
+
+- Corrected `Plan.md` so unshipped alarm / stun ideas are not presented as current MVP behavior.
+- Added ADRs for browser-only static MVP, PeerJS sharing, Document Picture-in-Picture, Bun + Vite + React tooling, and coverage policy.
+- Updated `CLAUDE.md` so coverage policy matches the current quality gate and documented coverage practice.
+- Added browser smoke test checklist and 2026-05-07 smoke result.
+- Updated AI-DLC quality assessment and workflow state to reflect resolved follow-up items.
+
+### Decision
+
+The repository now treats the current README / code behavior as the source of truth for submission claims. Historical planning notes remain in `Plan.md`, but they are annotated so reviewers do not mistake unshipped ideas for implemented features.

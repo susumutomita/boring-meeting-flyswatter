@@ -21,7 +21,7 @@
 
 ## 実装原則
 
-- **TDD**: テストを先に書く（Red → Green → Refactor）。カバレッジ 100% を維持する。
+- **TDD**: テストを先に書く（Red → Green → Refactor）。新規・変更する純粋ドメインロジックは主要分岐を 100% exercise する。リポジトリ全体の coverage は `bun run test:coverage` で可視化し、未達がある場合は Plan.md / PR に理由と受容範囲を記録する。
 - **BDD スタイル**: `describe`/`it` を日本語で記述し、振る舞いを表現する。
 - **No Mock**: 実際の DB・API・ファイル I/O を使う。モックデータ・スタブ API 禁止。
 - **フルスタック一気通貫**: 新機能はデータモデル・API・フロント・テストをまとめて実装する。
