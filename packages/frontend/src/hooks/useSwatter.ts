@@ -4,7 +4,7 @@ import {
   useRef,
   useState,
 } from 'react';
-import { type Fly, selectFlyInSwatReach } from '../lib/meeting';
+import { type Fly, type Treat, selectFlyInSwatReach } from '../lib/meeting';
 
 export const swatImpactDelayMs = 70;
 export const knockdownLifetimeMs = 620;
@@ -70,7 +70,9 @@ const getArenaPoint = (
 type UseSwatterArgs = {
   isActive: boolean;
   flies: Fly[];
+  treat: Treat | null;
   onSwatFly: (flyId: number) => void;
+  onSwatTreat: (point: ArenaPoint) => void;
 };
 
 type UseSwatterReturn = {
@@ -86,17 +88,24 @@ type UseSwatterReturn = {
 export const useSwatter = ({
   isActive,
   flies,
+  treat,
   onSwatFly,
+  onSwatTreat,
 }: UseSwatterArgs): UseSwatterReturn => {
   const [swatter, setSwatter] = useState(initialSwatterPose);
   const lastPointerRef = useRef<ArenaPoint | null>(null);
   const scheduledTimeoutsRef = useRef<number[]>([]);
   const nextEffectIdRef = useRef(0);
   const onSwatFlyRef = useRef(onSwatFly);
+  const onSwatTreatRef = useRef(onSwatTreat);
 
   useEffect(() => {
     onSwatFlyRef.current = onSwatFly;
   }, [onSwatFly]);
+
+  useEffect(() => {
+    onSwatTreatRef.current = onSwatTreat;
+  }, [onSwatTreat]);
 
   const knockedFlyIds = new Set(
     swatter.knockdowns.map((knockdown) => knockdown.flyId)
@@ -263,6 +272,29 @@ export const useSwatter = ({
     });
     const targetFly =
       availableFlies.find((fly) => fly.id === targetFlyId) ?? null;
+
+    // Treat takes priority if it is closer to the swatter head than the
+    // selected fly. Treat reach is a touch wider so the cup feels easy to
+    // smash with the swatter.
+    if (treat) {
+      const treatReachPixels = 96;
+      const treatDistance = Math.hypot(
+        ((treat.x - swatHeadPoint.x) / 100) * rect.width,
+        ((treat.y - swatHeadPoint.y) / 100) * rect.height
+      );
+      const flyDistance = targetFly
+        ? Math.hypot(
+            ((targetFly.x - swatHeadPoint.x) / 100) * rect.width,
+            ((targetFly.y - swatHeadPoint.y) / 100) * rect.height
+          )
+        : Number.POSITIVE_INFINITY;
+
+      if (treatDistance <= treatReachPixels && treatDistance < flyDistance) {
+        onSwatTreatRef.current({ x: treat.x, y: treat.y });
+        triggerSwatAt(point, null);
+        return;
+      }
+    }
 
     triggerSwatAt(
       point,

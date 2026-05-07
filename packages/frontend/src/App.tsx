@@ -162,7 +162,19 @@ const App = () => {
   } = useSwatter({
     isActive: state.currentGame !== null,
     flies,
+    treat: state.currentGame?.treat ?? null,
     onSwatFly: (flyId) => setState((current) => swatFly(current, flyId)),
+    onSwatTreat: (point) => {
+      treatPopupIdRef.current += 1;
+      const popupId = treatPopupIdRef.current;
+      setTreatBoostPopup({ id: popupId, x: point.x, y: point.y });
+      setState((current) => swatTreat(current));
+      window.setTimeout(() => {
+        setTreatBoostPopup((current) =>
+          current && current.id === popupId ? null : current
+        );
+      }, 1100);
+    },
   });
 
   useEffect(() => {
