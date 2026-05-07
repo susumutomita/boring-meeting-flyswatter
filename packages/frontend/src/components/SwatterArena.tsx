@@ -49,6 +49,8 @@ export const SwatterArena = ({
     alarm && alarm.totalLifeTicks > 0
       ? Math.max(0, alarm.lifeTicks / alarm.totalLifeTicks)
       : 0;
+  const bee = game?.bee ?? null;
+  const isStunned = (game?.stunTicksRemaining ?? 0) > 0;
 
   return (
     <article className="panel arena-panel game-panel">
@@ -184,6 +186,29 @@ export const SwatterArena = ({
                   </span>
                   <span className="treat-caption">{sponsoredItem.label}</span>
                 </button>
+              ) : null}
+              {bee ? (
+                <span
+                  aria-hidden="true"
+                  className="golden-bee"
+                  key={bee.id}
+                  style={
+                    {
+                      '--bee-x': `${bee.x}%`,
+                      '--bee-y': `${bee.y}%`,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="golden-bee-wing golden-bee-wing-left" />
+                  <span className="golden-bee-wing golden-bee-wing-right" />
+                  <span className="golden-bee-body" />
+                  <span className="golden-bee-stinger" />
+                </span>
+              ) : null}
+              {isStunned ? (
+                <div className="stun-flash" aria-hidden="true">
+                  <span>STUN</span>
+                </div>
               ) : null}
               {alarm ? (
                 <button
