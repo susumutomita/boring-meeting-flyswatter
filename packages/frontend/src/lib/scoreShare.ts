@@ -65,6 +65,30 @@ export const rankPeers = (
   return copy;
 };
 
+export type ProductivityAverage = {
+  average: number | null;
+  respondents: number;
+};
+
+export const averageProductivityScore = (
+  snapshots: readonly ScoreSnapshot[]
+): ProductivityAverage => {
+  const scores: number[] = [];
+  for (const snapshot of snapshots) {
+    if (snapshot.productivityScore !== null) {
+      scores.push(snapshot.productivityScore);
+    }
+  }
+  if (scores.length === 0) {
+    return { average: null, respondents: 0 };
+  }
+  const total = scores.reduce((sum, value) => sum + value, 0);
+  return {
+    average: Math.round((total / scores.length) * 10) / 10,
+    respondents: scores.length,
+  };
+};
+
 export const tallyReasons = (
   snapshots: readonly ScoreSnapshot[]
 ): ReasonTally[] => {
