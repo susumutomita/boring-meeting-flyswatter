@@ -9,6 +9,10 @@ export const maxPenalties = 5;
 export const openingGraceTicks = 28;
 export const treatSpawnTicks = 33;
 export const treatBoostMultiplier = 2;
+export const alarmSpawnTicks = 33;
+export const alarmLifeTicks = 17;
+export const alarmHitReward = 10;
+export const alarmMissPenalty = 15;
 
 export const productivityScoreMin = 1;
 export const productivityScoreMax = 10;
@@ -81,6 +85,14 @@ export type Treat = {
   age: number;
 };
 
+export type Alarm = {
+  id: number;
+  x: number;
+  y: number;
+  lifeTicks: number;
+  totalLifeTicks: number;
+};
+
 export type ActiveGameSeed = {
   eventId: number;
   durationSeconds: number;
@@ -93,6 +105,8 @@ export type ActiveGameSeed = {
   treatSpawnTicksRemaining: number;
   treatConsumed: boolean;
   armed: boolean;
+  alarm: Alarm | null;
+  alarmSpawnTicksRemaining: number;
 };
 
 export type ActiveGame = ActiveGameSeed & {
@@ -144,6 +158,7 @@ export type SwatFieldSize = {
 let flyId = 0;
 let eventId = 0;
 let treatId = 0;
+let alarmId = 0;
 const defaultSwatReachPixels = 96;
 const dangerChargeRatio = 0.72;
 const flyBounds = {
@@ -157,6 +172,12 @@ const treatBounds = {
   maxX: 86,
   minY: 22,
   maxY: 70,
+};
+const alarmBounds = {
+  minX: 16,
+  maxX: 84,
+  minY: 24,
+  maxY: 68,
 };
 
 const nextFlyId = () => {
@@ -173,6 +194,23 @@ const nextTreatId = () => {
   treatId += 1;
   return treatId;
 };
+
+const nextAlarmId = () => {
+  alarmId += 1;
+  return alarmId;
+};
+
+export const createAlarm = (random = Math.random): Alarm => ({
+  id: nextAlarmId(),
+  x:
+    alarmBounds.minX +
+    Math.round(random() * (alarmBounds.maxX - alarmBounds.minX)),
+  y:
+    alarmBounds.minY +
+    Math.round(random() * (alarmBounds.maxY - alarmBounds.minY)),
+  lifeTicks: alarmLifeTicks,
+  totalLifeTicks: alarmLifeTicks,
+});
 
 export const createFly = (random = Math.random): Fly => {
   const speed = 0.9 + random() * 1.7;
@@ -225,6 +263,8 @@ export const createGameSeed = (): ActiveGameSeed => ({
   treatSpawnTicksRemaining: treatSpawnTicks,
   treatConsumed: false,
   armed: true,
+  alarm: null,
+  alarmSpawnTicksRemaining: alarmSpawnTicks,
 });
 
 export const createInitialMeetingState = (): MeetingState => ({
@@ -473,6 +513,24 @@ export const swatFly = (
   };
 };
 
+export const swatAlarm = (state: MeetingState): MeetingState => {
+  if (!state.currentGame || !state.currentGame.alarm) {
+    return state;
+  }
+
+  const currentGame = {
+    ...state.currentGame,
+    alarm: null,
+    score: state.currentGame.score + alarmHitReward,
+  };
+
+  return {
+    ...state,
+    currentGame,
+    lastActivityLabel: `警告を消した +${alarmHitReward}`,
+  };
+};
+
 export const swatTreat = (state: MeetingState): MeetingState => {
   if (
     !state.currentGame ||
@@ -610,6 +668,33 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     };
   }
 
+  let nextAlarm: Alarm | null = state.currentGame.alarm;
+  let nextAlarmSpawnRemaining = state.currentGame.alarmSpawnTicksRemaining;
+  let nextScore = state.currentGame.score;
+  let alarmExpired = false;
+  let alarmJustSpawned = false;
+
+  if (isBriefing) {
+    nextAlarm = null;
+    nextAlarmSpawnRemaining = alarmSpawnTicks;
+  } else if (nextAlarm) {
+    const remainingLife = nextAlarm.lifeTicks - 1;
+    if (remainingLife <= 0) {
+      nextAlarm = null;
+      nextAlarmSpawnRemaining = alarmSpawnTicks;
+      nextScore = nextScore - alarmMissPenalty;
+      alarmExpired = true;
+    } else {
+      nextAlarm = { ...nextAlarm, lifeTicks: remainingLife };
+    }
+  } else {
+    nextAlarmSpawnRemaining = Math.max(0, nextAlarmSpawnRemaining - 1);
+    if (nextAlarmSpawnRemaining === 0) {
+      nextAlarm = createAlarm();
+      alarmJustSpawned = true;
+    }
+  }
+
   const currentGame = {
     ...state.currentGame,
     flies: activeFlies,
@@ -617,6 +702,9 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     graceTicks,
     treat: nextTreat,
     treatSpawnTicksRemaining: nextSpawnRemaining,
+    alarm: nextAlarm,
+    alarmSpawnTicksRemaining: nextAlarmSpawnRemaining,
+    score: nextScore,
   };
 
   return {
@@ -624,9 +712,13 @@ export const moveFlies = (state: MeetingState): MeetingState => {
     currentGame,
     lastActivityLabel: isBriefing
       ? 'ハエ叩きの説明中'
-      : shouldSpawnTreat
-        ? 'ボーナスが現れた'
-        : state.lastActivityLabel,
+      : alarmExpired
+        ? `警告を見逃した -${alarmMissPenalty}`
+        : alarmJustSpawned
+          ? '警告が出た！'
+          : shouldSpawnTreat
+            ? 'ボーナスが現れた'
+            : state.lastActivityLabel,
   };
 };
 

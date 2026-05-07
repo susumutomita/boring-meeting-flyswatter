@@ -1,8 +1,12 @@
 import { describe, expect, it } from 'bun:test';
 import {
   type ActiveGameSeed,
+  type Alarm,
   type Fly,
   advanceMeeting,
+  alarmHitReward,
+  alarmLifeTicks,
+  alarmMissPenalty,
   boredomThresholdSeconds,
   counterThresholdTicks,
   createFly,
@@ -20,6 +24,7 @@ import {
   selectSwattingFeedback,
   setProductivityScore,
   startMeeting,
+  swatAlarm,
   swatFly,
   swatTier,
   swatTreat,
@@ -51,6 +56,8 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
   treatSpawnTicksRemaining: 0,
   treatConsumed: false,
   armed: false,
+  alarm: null,
+  alarmSpawnTicksRemaining: 1000,
 });
 
 describe('会議退屈度ロジック', () => {
@@ -365,6 +372,74 @@ describe('会議退屈度ロジック', () => {
     const afterTick = moveFlies(afterFirst);
     expect(afterTick.currentGame?.treat).toBeNull();
     expect(afterTick.currentGame?.treatConsumed).toBe(true);
+  });
+
+  it('警告は spawn 残量 0 の tick で出現するべき', () => {
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(0),
+        atSecond: boredomThresholdSeconds,
+        alarmSpawnTicksRemaining: 1,
+      },
+    };
+
+    const afterTick = moveFlies(state);
+
+    expect(afterTick.currentGame?.alarm).not.toBeNull();
+    expect(afterTick.currentGame?.alarm?.lifeTicks).toBe(alarmLifeTicks);
+  });
+
+  it('警告をクリックすると +10 点で消えるべき', () => {
+    const alarm: Alarm = {
+      id: 999,
+      x: 50,
+      y: 40,
+      lifeTicks: 5,
+      totalLifeTicks: alarmLifeTicks,
+    };
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(0),
+        atSecond: boredomThresholdSeconds,
+        score: 10,
+        alarm,
+        alarmSpawnTicksRemaining: 1000,
+      },
+    };
+
+    const afterClick = swatAlarm(state);
+
+    expect(afterClick.currentGame?.alarm).toBeNull();
+    expect(afterClick.currentGame?.score).toBe(10 + alarmHitReward);
+  });
+
+  it('警告の寿命が 0 になると -15 点で勝手に消えるべき', () => {
+    const state = {
+      ...startMeeting(),
+      phase: 'swatting' as const,
+      currentGame: {
+        ...createGameFixture(0),
+        atSecond: boredomThresholdSeconds,
+        score: 30,
+        alarm: {
+          id: 1,
+          x: 50,
+          y: 40,
+          lifeTicks: 1,
+          totalLifeTicks: alarmLifeTicks,
+        },
+        alarmSpawnTicksRemaining: 1000,
+      },
+    };
+
+    const afterTick = moveFlies(state);
+
+    expect(afterTick.currentGame?.alarm).toBeNull();
+    expect(afterTick.currentGame?.score).toBe(30 - alarmMissPenalty);
   });
 
   it('ミーティング終了で完了フェーズに移り終了時刻を記録するべき', () => {

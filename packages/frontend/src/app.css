@@ -464,6 +464,63 @@ button {
     scale(calc(var(--fly-scale, 1) * 1.1));
 }
 
+.alarm-target {
+  position: absolute;
+  top: var(--alarm-y);
+  left: var(--alarm-x);
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 6;
+  transform: translate(-50%, -50%);
+  display: grid;
+  place-items: center;
+  animation: alarm-pulse 0.7s ease-in-out infinite alternate;
+}
+
+.alarm-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 4px solid #d11a2a;
+  background: rgba(255, 235, 235, 0.95);
+  box-shadow: 0 0 0 3px rgba(209, 26, 42, 0.18);
+  clip-path: inset(
+    0 calc((1 - var(--alarm-life, 1)) * 50%) 0
+      calc((1 - var(--alarm-life, 1)) * 50%)
+  );
+}
+
+.alarm-glyph {
+  position: relative;
+  font-family: "Impact", "Haettenschweiler", sans-serif;
+  font-size: 2.4rem;
+  color: #d11a2a;
+  line-height: 1;
+  z-index: 1;
+}
+
+.alarm-target:hover .alarm-ring {
+  background: #ffe1e3;
+}
+
+.alarm-target:focus-visible {
+  outline: 3px solid #d11a2a;
+  outline-offset: 4px;
+}
+
+@keyframes alarm-pulse {
+  from {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  to {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+}
+
 .treat-target {
   position: absolute;
   top: var(--treat-y);
