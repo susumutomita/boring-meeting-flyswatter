@@ -6,6 +6,8 @@
 
 A browser-only experiment that watches a meeting for the first 60-second silence and turns it into a 15-second fly-swatting break.
 
+<img src="./docs/images/concept-poster.png" alt="Concept poster: meeting boredom meter with a fly-swatting mini-game" width="640" />
+
 [Live demo](https://susumutomita.github.io/boring-meeting-flyswatter/) · [Features](#features) · [Quick start](#quick-start) · [日本語](#日本語)
 
 [![ci](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml/badge.svg)](https://github.com/susumutomita/boring-meeting-flyswatter/actions/workflows/ci.yml)
@@ -17,6 +19,13 @@ A browser-only experiment that watches a meeting for the first 60-second silence
 ## Why
 
 Most meetings have a moment when everyone quietly checks out. Nobody logs it, so nothing changes. This project logs that moment, *once* per meeting, and turns it into a 15-second mini-game so the act of recording is something you actually want to do.
+
+<details>
+<summary>Pitch deck (hackathon overview)</summary>
+
+![Pitch deck overview for the meeting boredom meter](./docs/images/pitch-deck.png)
+
+</details>
 
 ## Features
 
@@ -110,6 +119,15 @@ Issues for bugs and ideas are welcome. Pull requests should pass `make before-co
 **退屈な会議に、ハエ叩きを 1 回。**
 
 ブラウザだけで動く実験プロダクト。会議の横で `ミーティング開始` を押し、いつも通り会議に出る。沈黙と無操作が 60 秒続いた最初の瞬間にアプリが気づき「ハエ叩きを始める？」と一度だけ聞いてくる。クリックすると 15 秒のハエ叩きミニゲーム。会議終了後に「なぜ退屈だった？」をプリセット選択で 1 回だけ聞き、ルームの仲間と WebRTC で共有する。
+
+<img src="./docs/images/concept-poster.png" alt="ハエ叩きゲーム付き会議退屈度メーターの紹介ポスター" width="640" />
+
+<details>
+<summary>ハッカソンで使ったピッチデッキ ( 概要図 )</summary>
+
+![会議退屈度メーターのピッチデッキ概要](./docs/images/pitch-deck.png)
+
+</details>
 
 ### 主な機能
 
