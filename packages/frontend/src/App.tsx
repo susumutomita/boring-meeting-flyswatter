@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { MeetingSummary } from './components/MeetingSummary';
 import { PipMeter } from './components/PipMeter';
-import { ReasonPicker } from './components/ReasonPicker';
 import { SwatterArena } from './components/SwatterArena';
 import { useActivityTracking } from './hooks/useActivityTracking';
 import { useBoredomNotification } from './hooks/useBoredomNotification';
@@ -462,20 +461,6 @@ const App = () => {
                       ハエ叩きを始める
                     </button>
                   </div>
-                </div>
-              ) : null}
-
-              {state.boredomGameTriggered &&
-              state.boredomReasons.length === 0 ? (
-                <div className="floating-reason-picker">
-                  <ReasonPicker
-                    reasons={state.boredomReasons}
-                    onTogglePreset={(preset) =>
-                      setState((current) =>
-                        toggleBoredomReason(current, preset)
-                      )
-                    }
-                  />
                 </div>
               ) : null}
             </>

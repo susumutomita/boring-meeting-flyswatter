@@ -12,7 +12,11 @@ import {
   swatTierLabel,
 } from '../lib/meeting';
 import { selectQuote } from '../lib/quotes';
-import { type ScoreSnapshot, tallyReasons } from '../lib/scoreShare';
+import {
+  type ScoreSnapshot,
+  averageProductivityScore,
+  tallyReasons,
+} from '../lib/scoreShare';
 
 type MeetingSummaryProps = {
   state: MeetingState;
@@ -66,6 +70,7 @@ export const MeetingSummary = ({
   const swatScoreTier = game ? swatTier(game.swats) : null;
   const tally = tallyReasons(sharedPeers);
   const peakCount = tally[0]?.count ?? 0;
+  const productivityAverage = averageProductivityScore(sharedPeers);
   const respondents = sharedPeers.filter(
     (peer) => peer.reasons.length > 0
   ).length;
@@ -220,6 +225,21 @@ export const MeetingSummary = ({
                 </button>
               </div>
             )}
+
+            {isShareJoined && productivityAverage.average !== null ? (
+              <div className="meeting-summary-productivity-average">
+                <span className="meeting-summary-productivity-average-label">
+                  全員の主観平均
+                </span>
+                <span className="meeting-summary-productivity-average-value">
+                  {productivityAverage.average}
+                  <small>/ {productivityScoreMax}</small>
+                </span>
+                <span className="meeting-summary-productivity-average-meta">
+                  {productivityAverage.respondents} 人回答
+                </span>
+              </div>
+            ) : null}
 
             {isShareJoined && sharedPeers.length > 0 ? (
               <ol className="meeting-summary-roster">

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'bun:test';
 import {
   type ScoreSnapshot,
+  averageProductivityScore,
   buildHostPeerId,
   mergePeerScores,
   rankPeers,
@@ -72,6 +73,27 @@ describe('スコア共有のルーム / ピア処理', () => {
     ]);
 
     expect(ranked.map((snapshot) => snapshot.peerId)).toEqual(['c', 'b', 'a']);
+  });
+
+  it('主観評価の平均は回答した人だけで小数 1 桁で計算されるべき', () => {
+    const result = averageProductivityScore([
+      buildSnapshot({ peerId: 'a', productivityScore: 7 }),
+      buildSnapshot({ peerId: 'b', productivityScore: 4 }),
+      buildSnapshot({ peerId: 'c', productivityScore: 9 }),
+      buildSnapshot({ peerId: 'd', productivityScore: null }),
+    ]);
+
+    expect(result.average).toBe(6.7);
+    expect(result.respondents).toBe(3);
+  });
+
+  it('主観評価の回答が 0 件なら average は null になるべき', () => {
+    const result = averageProductivityScore([
+      buildSnapshot({ peerId: 'a', productivityScore: null }),
+    ]);
+
+    expect(result.average).toBeNull();
+    expect(result.respondents).toBe(0);
   });
 
   it('退屈の理由は人数の多い順に集計され同数なら名前順で揃うべき', () => {
