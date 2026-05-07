@@ -287,7 +287,8 @@ button {
 .arena-idle .meeting-tip {
   display: grid;
   gap: 12px;
-  max-width: min(680px, 92%);
+  width: min(680px, 92%);
+  justify-self: center;
   padding: 18px 22px;
   border: 1px solid var(--line);
   border-radius: 12px;

@@ -245,7 +245,7 @@ export const SwatterArena = ({
         ) : (
           <div className="arena-idle">
             <span>{idleLabel}</span>
-            <strong>{idleValue}</strong>
+            {idleValue}
           </div>
         )}
       </div>
