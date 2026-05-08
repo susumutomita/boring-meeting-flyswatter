@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'bun:test';
 import {
+  audioLevelToPercent,
   computeRmsDecibels,
   isSpeechSample,
   speechSustainSamples,
@@ -44,5 +45,32 @@ describe('音声サンプル分類', () => {
 
     expect(silenceDb).toBeLessThan(-100);
     expect(toneDb).toBeGreaterThan(-10);
+  });
+});
+
+describe('音量バー用のレベル割合変換', () => {
+  it('無音より下のデシベル値は 0% に丸めるべき', () => {
+    expect(audioLevelToPercent(-80)).toBe(0);
+    expect(audioLevelToPercent(-60)).toBe(0);
+  });
+
+  it('上限より上のデシベル値は 100% に丸めるべき', () => {
+    expect(audioLevelToPercent(-5)).toBe(100);
+    expect(audioLevelToPercent(0)).toBe(100);
+  });
+
+  it('床と天井の中間のデシベル値は 50% 前後を返すべき', () => {
+    expect(audioLevelToPercent(-35)).toBeGreaterThanOrEqual(45);
+    expect(audioLevelToPercent(-35)).toBeLessThanOrEqual(55);
+  });
+
+  it('発話判定しきい値の付近では 0% より上を返して可視化されるべき', () => {
+    expect(audioLevelToPercent(speechThresholdDb)).toBeGreaterThan(0);
+    expect(audioLevelToPercent(speechThresholdDb)).toBeLessThan(50);
+  });
+
+  it('NaN や負の無限大は 0% として扱うべき', () => {
+    expect(audioLevelToPercent(Number.NEGATIVE_INFINITY)).toBe(0);
+    expect(audioLevelToPercent(Number.NaN)).toBe(0);
   });
 });

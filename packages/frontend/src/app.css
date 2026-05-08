@@ -2004,6 +2004,7 @@ button {
 .pip-row-tight {
   font-size: 0.74rem;
   color: rgba(241, 242, 244, 0.7);
+  align-items: center;
 }
 
 .pip-label {
@@ -2017,18 +2018,47 @@ button {
   font-family: "VT323", "Courier New", monospace;
 }
 
-.pip-meter {
-  height: 6px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.18);
-  overflow: hidden;
+.pip-vumeter {
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 12px;
+  padding: 2px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.pip-meter-fill {
-  width: var(--pip-meter-width, 0%);
-  height: 100%;
-  background: linear-gradient(90deg, #7be0a3, #f1c66c, #ec6262);
-  transition: width 220ms ease;
+.pip-vumeter.is-speaking {
+  border-color: rgba(123, 224, 163, 0.85);
+  box-shadow: 0 0 0 1px rgba(123, 224, 163, 0.45);
+}
+
+.pip-vumeter-seg {
+  flex: 1 1 0;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  transition: background 80ms ease, opacity 80ms ease;
+  opacity: 0.55;
+}
+
+.pip-vumeter-seg.is-on {
+  opacity: 1;
+}
+
+.pip-vumeter-low.is-on {
+  background: #7be0a3;
+}
+
+.pip-vumeter-mid.is-on {
+  background: #f1c66c;
+}
+
+.pip-vumeter-high.is-on {
+  background: #ec6262;
 }
 
 .pip-toast {
