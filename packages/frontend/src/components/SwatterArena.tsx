@@ -20,8 +20,9 @@ type SwatterArenaProps = {
   onPointerLeave: () => void;
   onTargetClick: (target: SwatTarget) => void;
   onTreatClick: (point: { x: number; y: number }) => void;
-  onBeeClick: () => void;
+  onBeeClick: (point: { x: number; y: number }) => void;
   treatBoostPopup: { id: number; x: number; y: number } | null;
+  beeBoostPopup: { id: number; x: number; y: number } | null;
 };
 
 export const SwatterArena = ({
@@ -39,6 +40,7 @@ export const SwatterArena = ({
   onTreatClick,
   onBeeClick,
   treatBoostPopup,
+  beeBoostPopup,
 }: SwatterArenaProps) => {
   const score = game?.score ?? 0;
   const remainingSeconds = game?.remainingSeconds ?? 0;
@@ -188,7 +190,7 @@ export const SwatterArena = ({
                   key={bee.id}
                   onClick={(event) => {
                     event.stopPropagation();
-                    onBeeClick();
+                    onBeeClick({ x: bee.x, y: bee.y });
                   }}
                   onPointerDown={(event) => event.stopPropagation()}
                   style={
@@ -232,6 +234,28 @@ export const SwatterArena = ({
                     ✦
                   </span>
                   <span className="treat-boost-popup-sparkle treat-boost-popup-sparkle-c">
+                    ✦
+                  </span>
+                </div>
+              ) : null}
+              {beeBoostPopup ? (
+                <div
+                  aria-hidden="true"
+                  className="bee-boost-popup"
+                  key={beeBoostPopup.id}
+                  style={
+                    {
+                      '--popup-x': `${beeBoostPopup.x}%`,
+                      '--popup-y': `${beeBoostPopup.y}%`,
+                    } as CSSProperties
+                  }
+                >
+                  <span className="bee-boost-popup-headline">+10!</span>
+                  <span className="bee-boost-popup-sub">黄金のハチ撃破</span>
+                  <span className="bee-boost-popup-sparkle bee-boost-popup-sparkle-a">
+                    ✦
+                  </span>
+                  <span className="bee-boost-popup-sparkle bee-boost-popup-sparkle-b">
                     ✦
                   </span>
                 </div>

@@ -28,6 +28,7 @@ import {
   swatTreat,
   toggleBoredomReason,
   treatBoostMultiplier,
+  triggerPracticeSwatting,
 } from './meeting';
 
 const createFlyFixture = (id: number): Fly => ({
@@ -59,6 +60,29 @@ const createGameFixture = (graceTicks = 0): ActiveGameSeed => ({
 });
 
 describe('会議退屈度ロジック', () => {
+  it('隠しコマンドでアイドルからハエ叩きへ即起動するべき', () => {
+    const state = triggerPracticeSwatting(
+      createInitialMeetingState(),
+      createGameFixture
+    );
+
+    expect(state.phase).toBe('swatting');
+    expect(state.currentGame).not.toBeNull();
+    expect(state.boredomGameTriggered).toBe(true);
+    expect(state.lastActivityLabel).toBe('練習モード起動');
+  });
+
+  it('完了状態では隠しコマンドが効かないべき', () => {
+    const completedState = {
+      ...createInitialMeetingState(),
+      phase: 'completed' as const,
+    };
+
+    const next = triggerPracticeSwatting(completedState, createGameFixture);
+
+    expect(next).toBe(completedState);
+  });
+
   it('会議開始で監視状態へ入るべき', () => {
     const state = startMeeting();
 

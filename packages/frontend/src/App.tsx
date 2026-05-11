@@ -9,6 +9,7 @@ import { useDocumentPip } from './hooks/useDocumentPip';
 import { useMeetingTick } from './hooks/useMeetingTick';
 import { useMicrophoneActivity } from './hooks/useMicrophoneActivity';
 import { useScoreShare } from './hooks/useScoreShare';
+import { useSecretCommand } from './hooks/useSecretCommand';
 import { useSwatter } from './hooks/useSwatter';
 import {
   type Language,
@@ -33,6 +34,7 @@ import {
   swatFly,
   swatTreat,
   toggleBoredomReason,
+  triggerPracticeSwatting,
 } from './lib/meeting';
 import { pickMeetingTip } from './lib/meetingTips';
 import {
@@ -106,12 +108,19 @@ const App = () => {
 
   const isSwatArmed = state.currentGame?.armed === true;
   const meetingTip = pickMeetingTip(tipSeed);
+  const [showPracticeToast, setShowPracticeToast] = useState(false);
   const [treatBoostPopup, setTreatBoostPopup] = useState<{
     id: number;
     x: number;
     y: number;
   } | null>(null);
+  const [beeBoostPopup, setBeeBoostPopup] = useState<{
+    id: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const treatPopupIdRef = useRef(0);
+  const beePopupIdRef = useRef(0);
   const selfPeerId = useMemo(ensureSelfPeerId, []);
 
   const sanitizedRoomCode = sanitizeRoomCode(roomCodeInput);
@@ -179,6 +188,7 @@ const App = () => {
     isActive: state.currentGame !== null,
     flies,
     treat: state.currentGame?.treat ?? null,
+    bee: state.currentGame?.bee ?? null,
     onSwatFly: (flyId) => setState((current) => swatFly(current, flyId)),
     onSwatTreat: (point) => {
       treatPopupIdRef.current += 1;
@@ -187,6 +197,17 @@ const App = () => {
       setState((current) => swatTreat(current));
       window.setTimeout(() => {
         setTreatBoostPopup((current) =>
+          current && current.id === popupId ? null : current
+        );
+      }, 1100);
+    },
+    onSwatBee: (point) => {
+      beePopupIdRef.current += 1;
+      const popupId = beePopupIdRef.current;
+      setBeeBoostPopup({ id: popupId, x: point.x, y: point.y });
+      setState((current) => swatBee(current));
+      window.setTimeout(() => {
+        setBeeBoostPopup((current) =>
           current && current.id === popupId ? null : current
         );
       }, 1100);
@@ -255,6 +276,28 @@ const App = () => {
     }
   }, [isRunning]);
 
+  useSecretCommand({
+    enabled: !isCompleted,
+    onTrigger: () => {
+      if (
+        typeof window !== 'undefined' &&
+        'speechSynthesis' in window &&
+        typeof window.SpeechSynthesisUtterance !== 'undefined'
+      ) {
+        const utter = new window.SpeechSynthesisUtterance('カカロット！');
+        utter.lang = 'ja-JP';
+        utter.rate = 0.85;
+        utter.pitch = 0.4;
+        utter.volume = 1;
+        window.speechSynthesis.cancel();
+        window.speechSynthesis.speak(utter);
+      }
+      setShowPracticeToast(true);
+      window.setTimeout(() => setShowPracticeToast(false), 2600);
+      setState((current) => triggerPracticeSwatting(current));
+    },
+  });
+
   const primaryButton = isIdle
     ? {
         label: t('start_meeting'),
@@ -315,6 +358,12 @@ const App = () => {
             ) : null}
           </div>
         </header>
+
+        {showPracticeToast ? (
+          <output className="practice-mode-toast" aria-live="polite">
+            <span className="practice-mode-toast-shout">カカロット！</span>
+          </output>
+        ) : null}
 
         {audioError ? (
           <div className="audio-error">
@@ -406,8 +455,19 @@ const App = () => {
                     );
                   }, 1100);
                 }}
-                onBeeClick={() => setState((current) => swatBee(current))}
+                onBeeClick={(point) => {
+                  beePopupIdRef.current += 1;
+                  const popupId = beePopupIdRef.current;
+                  setBeeBoostPopup({ id: popupId, x: point.x, y: point.y });
+                  setState((current) => swatBee(current));
+                  window.setTimeout(() => {
+                    setBeeBoostPopup((current) =>
+                      current && current.id === popupId ? null : current
+                    );
+                  }, 1100);
+                }}
                 treatBoostPopup={treatBoostPopup}
+                beeBoostPopup={beeBoostPopup}
               />
 
               {isSwatArmed ? (

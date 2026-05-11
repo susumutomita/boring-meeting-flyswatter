@@ -4,7 +4,12 @@ import {
   useRef,
   useState,
 } from 'react';
-import { type Fly, type Treat, selectFlyInSwatReach } from '../lib/meeting';
+import {
+  type Bee,
+  type Fly,
+  type Treat,
+  selectFlyInSwatReach,
+} from '../lib/meeting';
 
 export const swatImpactDelayMs = 70;
 export const knockdownLifetimeMs = 620;
@@ -71,8 +76,10 @@ type UseSwatterArgs = {
   isActive: boolean;
   flies: Fly[];
   treat: Treat | null;
+  bee: Bee | null;
   onSwatFly: (flyId: number) => void;
   onSwatTreat: (point: ArenaPoint) => void;
+  onSwatBee: (point: ArenaPoint) => void;
 };
 
 type UseSwatterReturn = {
@@ -89,8 +96,10 @@ export const useSwatter = ({
   isActive,
   flies,
   treat,
+  bee,
   onSwatFly,
   onSwatTreat,
+  onSwatBee,
 }: UseSwatterArgs): UseSwatterReturn => {
   const [swatter, setSwatter] = useState(initialSwatterPose);
   const lastPointerRef = useRef<ArenaPoint | null>(null);
@@ -98,6 +107,7 @@ export const useSwatter = ({
   const nextEffectIdRef = useRef(0);
   const onSwatFlyRef = useRef(onSwatFly);
   const onSwatTreatRef = useRef(onSwatTreat);
+  const onSwatBeeRef = useRef(onSwatBee);
 
   useEffect(() => {
     onSwatFlyRef.current = onSwatFly;
@@ -106,6 +116,10 @@ export const useSwatter = ({
   useEffect(() => {
     onSwatTreatRef.current = onSwatTreat;
   }, [onSwatTreat]);
+
+  useEffect(() => {
+    onSwatBeeRef.current = onSwatBee;
+  }, [onSwatBee]);
 
   const knockedFlyIds = new Set(
     swatter.knockdowns.map((knockdown) => knockdown.flyId)
@@ -273,21 +287,36 @@ export const useSwatter = ({
     const targetFly =
       availableFlies.find((fly) => fly.id === targetFlyId) ?? null;
 
-    // Treat takes priority if it is closer to the swatter head than the
-    // selected fly. Treat reach is a touch wider so the cup feels easy to
-    // smash with the swatter.
+    const flyDistance = targetFly
+      ? Math.hypot(
+          ((targetFly.x - swatHeadPoint.x) / 100) * rect.width,
+          ((targetFly.y - swatHeadPoint.y) / 100) * rect.height
+        )
+      : Number.POSITIVE_INFINITY;
+
+    // Golden bee takes priority over anything else when in reach because the
+    // payoff (+10) is large and the bee is on screen only briefly.
+    if (bee) {
+      const beeReachPixels = 104;
+      const beeDistance = Math.hypot(
+        ((bee.x - swatHeadPoint.x) / 100) * rect.width,
+        ((bee.y - swatHeadPoint.y) / 100) * rect.height
+      );
+
+      if (beeDistance <= beeReachPixels && beeDistance < flyDistance) {
+        onSwatBeeRef.current({ x: bee.x, y: bee.y });
+        triggerSwatAt(point, null);
+        return;
+      }
+    }
+
+    // Treat takes priority over flies if it is closer to the swatter head.
     if (treat) {
       const treatReachPixels = 96;
       const treatDistance = Math.hypot(
         ((treat.x - swatHeadPoint.x) / 100) * rect.width,
         ((treat.y - swatHeadPoint.y) / 100) * rect.height
       );
-      const flyDistance = targetFly
-        ? Math.hypot(
-            ((targetFly.x - swatHeadPoint.x) / 100) * rect.width,
-            ((targetFly.y - swatHeadPoint.y) / 100) * rect.height
-          )
-        : Number.POSITIVE_INFINITY;
 
       if (treatDistance <= treatReachPixels && treatDistance < flyDistance) {
         onSwatTreatRef.current({ x: treat.x, y: treat.y });

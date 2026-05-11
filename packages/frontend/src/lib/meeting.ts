@@ -307,6 +307,30 @@ export const toggleBoredomReason = (
   };
 };
 
+export const triggerPracticeSwatting = (
+  state: MeetingState,
+  createGame = createGameSeed
+): MeetingState => {
+  if (state.phase !== 'idle' && state.phase !== 'monitoring') {
+    return state;
+  }
+
+  const base = state.phase === 'idle' ? startMeeting() : state;
+  const atSecond = base.meetingSeconds;
+  const game = createGame();
+
+  return {
+    ...base,
+    phase: 'swatting',
+    currentGame: { ...game, atSecond },
+    firstBoredomSecond: base.firstBoredomSecond ?? atSecond,
+    swattingStartedAt: base.swattingStartedAt ?? Date.now(),
+    boredomGameTriggered: true,
+    inactiveSeconds: boredomThresholdSeconds,
+    lastActivityLabel: '練習モード起動',
+  };
+};
+
 export const startSwattingGame = (state: MeetingState): MeetingState => {
   if (
     state.phase !== 'swatting' ||
