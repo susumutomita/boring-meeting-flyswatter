@@ -1,0 +1,15 @@
+# Bun configuration — supply-chain hardening.
+#
+# The mini-shai-hulud 2nd wave (Flatt Tech, 2026-05-12) propagates by inserting
+# a `prepare` script in compromised packages and abusing `optionalDependencies`
+# that point at attacker-controlled GitHub forks. `ignoreScripts = true` is
+# Bun's documented way to disable lifecycle scripts during install — it skips
+# preinstall / install / postinstall / prepare for both the project and every
+# dependency, neutralising the primary propagation step.
+#
+# Because this also skips the project's own `prepare: husky`, `make install`
+# re-runs husky explicitly via `bun x husky` so local git hooks still bootstrap.
+
+[install]
+frozenLockfile = true
+ignoreScripts = true

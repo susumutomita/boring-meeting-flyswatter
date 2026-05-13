@@ -34,6 +34,13 @@ jobs:
         # oven-sh/setup-bun v2.0.2
         uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
 
+      # Supply Chain Security: Block the install entirely if the checked-out
+      # tree already carries mini-shai-hulud 2nd indicators (compromised
+      # optionalDependencies, dropper filenames, C2 strings). Runs *before*
+      # any dependency code can execute.
+      - name: Audit supply chain (pre-install)
+        run: node scripts/security/check-supply-chain.mjs
+
       # Supply Chain Security: Setup safe-chain before dependency installation
       - name: Setup safe-chain
         run: |
