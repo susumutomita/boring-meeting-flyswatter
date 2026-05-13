@@ -32,6 +32,10 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@735343b667d3e6f658f44d0eca948eb6282f2b76
 
+      # Supply Chain Security: pre-install IOC scan (mini-shai-hulud 2nd).
+      - name: Audit supply chain (pre-install)
+        run: node scripts/security/check-supply-chain.mjs
+
       - name: Configure Pages
         uses: actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b
 

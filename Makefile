@@ -50,8 +50,12 @@ format:
 format_check:
 	bun run format:check
 
+.PHONY: security_audit
+security_audit:
+	node scripts/security/check-supply-chain.mjs
+
 .PHONY: before-commit
-before-commit: lint_text lint typecheck test build
+before-commit: security_audit lint_text lint typecheck test build
 
 .PHONY: dev
 dev:
