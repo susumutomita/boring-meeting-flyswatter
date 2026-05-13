@@ -1,10 +1,15 @@
 .PHONY: install
 install:
-	bun install
+	# --ignore-scripts: defuse mini-shai-hulud 2nd wave (Flatt Tech, 2026-05-12).
+	# bun does not honour npm_config_ignore_scripts or .npmrc's ignore-scripts,
+	# so the flag is required on every invocation. Husky's `prepare` is skipped
+	# along with everything else, so we re-bootstrap it explicitly afterwards.
+	bun install --ignore-scripts
+	bun x husky
 
 .PHONY: install_ci
 install_ci:
-	bun install --frozen-lockfile
+	bun install --ignore-scripts --frozen-lockfile
 
 .PHONY: build
 build:

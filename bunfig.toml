@@ -2,18 +2,14 @@
 #
 # The mini-shai-hulud 2nd wave (Flatt Tech, 2026-05-12) propagates by inserting
 # a `prepare` script in compromised packages and abusing `optionalDependencies`
-# that point at attacker-controlled GitHub forks.
+# that point at attacker-controlled GitHub forks. `ignoreScripts = true` is
+# Bun's documented way to disable lifecycle scripts during install — it skips
+# preinstall / install / postinstall / prepare for both the project and every
+# dependency, neutralising the primary propagation step.
 #
-# Bun's `install.scripts` flag globally disables lifecycle scripts; we only
-# allow ones we explicitly opt into via `install.trustedDependencies` in
-# package.json (currently empty — none of our deps need post-install scripts).
+# Because this also skips the project's own `prepare: husky`, `make install`
+# re-runs husky explicitly via `bun x husky` so local git hooks still bootstrap.
 
 [install]
-# Always require an exact match against bun.lock — no silent floating updates.
 frozenLockfile = true
-
-# Refuse to execute install/preinstall/postinstall/prepare scripts from any
-# dependency that is not in `trustedDependencies`. This neutralises the
-# primary propagation step of mini-shai-hulud 2nd.
-[install.scripts]
-enabled = false
+ignoreScripts = true
